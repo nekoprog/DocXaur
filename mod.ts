@@ -11,7 +11,10 @@
  */
 
 // Import from CDN that works in browser
-import JSZip from "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
+// import JSZip from "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm";
+
+// Import zip-js from JSR
+import { BlobWriter, TextReader, ZipWriter } from "jsr:@zip-js/zip-js";
 
 // ============================================================================
 // ENVIRONMENT CHECK
@@ -166,6 +169,16 @@ function parseNumberTwips(width: string): number {
   }
 }
 
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 function parseImageSize(size: string): number {
   const match = size.match(/^([\d.]+)(cm|pt|mm|in|px)$/);
   if (!match) return cmToEmu(5);
@@ -246,6 +259,100 @@ async function fetchImageAsBase64(
 // CORE CLASSES
 // ============================================================================
 
+// export class DocXaur {
+//   private sections: Section[] = [];
+//   private options: DocumentOptions;
+//   private images: Map<string, { data: string; extension: string; id: number }> =
+//     new Map();
+//   private imageCounter = 1;
+//   private fontName: string;
+//   private fontSize: number;
+
+//   constructor(options: DocumentOptions = {}) {
+//     checkBrowserEnvironment();
+
+//     this.fontName = options.fontName || "Calibri";
+//     this.fontSize = options.fontSize || 11;
+
+//     this.options = {
+//       title: options.title || "Document",
+//       creator: options.creator || "DocXaur",
+//       description: options.description || "",
+//       subject: options.subject || "",
+//       keywords: options.keywords || "",
+//       fontName: this.fontName,
+//       fontSize: this.fontSize,
+//     };
+//   }
+
+//   getDefaultFont(): string {
+//     return this.fontName;
+//   }
+
+//   getDefaultSize(): number {
+//     return this.fontSize;
+//   }
+
+//   addSection(options?: SectionOptions): Section {
+//     const section = new Section(options, this);
+//     this.sections.push(section);
+//     return section;
+//   }
+
+//   async registerImage(url: string): Promise<number> {
+//     if (this.images.has(url)) {
+//       return this.images.get(url)!.id;
+//     }
+
+//     const imageData = await fetchImageAsBase64(url);
+//     const id = this.imageCounter++;
+//     this.images.set(url, { ...imageData, id });
+//     return id;
+//   }
+
+//   async toBlob(): Promise<Blob> {
+//     checkBrowserEnvironment();
+
+//     const zip = new JSZip();
+
+//     zip.file("[Content_Types].xml", this.generateContentTypes());
+
+//     const rels = zip.folder("_rels");
+//     rels?.file(".rels", this.generateRootRels());
+
+//     const docRels = zip.folder("word/_rels");
+//     docRels?.file("document.xml.rels", this.generateDocRels());
+
+//     const word = zip.folder("word");
+//     word?.file("document.xml", this.generateDocument());
+//     word?.file("styles.xml", this.generateStyles());
+//     word?.file("fontTable.xml", this.generateFontTable());
+//     word?.file("settings.xml", this.generateSettings());
+
+//     const media = word?.folder("media");
+//     for (const [path, imgData] of this.images) {
+//       const filename = `image${imgData.id}.${imgData.extension}`;
+//       media?.file(filename, imgData.data, { base64: true });
+//     }
+
+//     const blob = await zip.generateAsync({ type: "blob" });
+//     return blob;
+//   }
+
+//   async download(filename: string = "document.docx"): Promise<void> {
+//     checkBrowserEnvironment();
+
+//     const blob = await this.toBlob();
+//     const url = URL.createObjectURL(blob);
+//     const link = document.createElement("a");
+//     link.href = url;
+//     link.download = filename;
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+//     URL.revokeObjectURL(url);
+//   }
+
 export class DocXaur {
   private sections: Section[] = [];
   private options: DocumentOptions;
@@ -257,27 +364,17 @@ export class DocXaur {
 
   constructor(options: DocumentOptions = {}) {
     checkBrowserEnvironment();
-
-    this.fontName = options.fontName || "Calibri";
-    this.fontSize = options.fontSize || 11;
-
+    this.fontName = options.fontName ?? "Calibri";
+    this.fontSize = options.fontSize ?? 11;
     this.options = {
-      title: options.title || "Document",
-      creator: options.creator || "DocXaur",
-      description: options.description || "",
-      subject: options.subject || "",
-      keywords: options.keywords || "",
+      title: options.title ?? "Document",
+      creator: options.creator ?? "DocXaur",
+      description: options.description ?? "",
+      subject: options.subject ?? "",
+      keywords: options.keywords ?? "",
       fontName: this.fontName,
       fontSize: this.fontSize,
     };
-  }
-
-  getDefaultFont(): string {
-    return this.fontName;
-  }
-
-  getDefaultSize(): number {
-    return this.fontSize;
   }
 
   addSection(options?: SectionOptions): Section {
@@ -290,45 +387,61 @@ export class DocXaur {
     if (this.images.has(url)) {
       return this.images.get(url)!.id;
     }
-
     const imageData = await fetchImageAsBase64(url);
     const id = this.imageCounter++;
     this.images.set(url, { ...imageData, id });
     return id;
   }
 
-  async toBlob(): Promise<Blob> {
-    checkBrowserEnvironment();
+  // ✅ NEW: Create DOCX ZIP using zip-js
+  private async createDocxZip(): Promise<Blob> {
+    const blobWriter = new BlobWriter();
+    const zipWriter = new ZipWriter(blobWriter);
 
-    const zip = new JSZip();
+    // Core files
+    await zipWriter.add(
+      "[Content_Types].xml",
+      new TextReader(this.generateContentTypes()),
+    );
+    await zipWriter.add("_rels/.rels", new TextReader(this.generateRootRels()));
+    await zipWriter.add(
+      "word/_rels/document.xml.rels",
+      new TextReader(this.generateDocRels()),
+    );
+    await zipWriter.add(
+      "word/document.xml",
+      new TextReader(this.generateDocument()),
+    );
+    await zipWriter.add(
+      "word/styles.xml",
+      new TextReader(this.generateStyles()),
+    );
+    await zipWriter.add(
+      "word/fontTable.xml",
+      new TextReader(this.generateFontTable()),
+    );
+    await zipWriter.add(
+      "word/settings.xml",
+      new TextReader(this.generateSettings()),
+    );
 
-    zip.file("[Content_Types].xml", this.generateContentTypes());
-
-    const rels = zip.folder("_rels");
-    rels?.file(".rels", this.generateRootRels());
-
-    const docRels = zip.folder("word/_rels");
-    docRels?.file("document.xml.rels", this.generateDocRels());
-
-    const word = zip.folder("word");
-    word?.file("document.xml", this.generateDocument());
-    word?.file("styles.xml", this.generateStyles());
-    word?.file("fontTable.xml", this.generateFontTable());
-    word?.file("settings.xml", this.generateSettings());
-
-    const media = word?.folder("media");
+    // Images
     for (const [path, imgData] of this.images) {
-      const filename = `image${imgData.id}.${imgData.extension}`;
-      media?.file(filename, imgData.data, { base64: true });
+      const filename = `word/media/image${imgData.id}.${imgData.extension}`;
+      await zipWriter.add(filename, base64ToUint8Array(imgData.data));
     }
 
-    const blob = await zip.generateAsync({ type: "blob" });
-    return blob;
+    await zipWriter.close();
+    return await blobWriter.getData();
+  }
+
+  async toBlob(): Promise<Blob> {
+    checkBrowserEnvironment();
+    return await this.createDocxZip();
   }
 
   async download(filename: string = "document.docx"): Promise<void> {
     checkBrowserEnvironment();
-
     const blob = await this.toBlob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
