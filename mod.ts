@@ -100,7 +100,7 @@ export interface ImageOptions {
 
 export interface TableColumn {
   width: string;
-  hAlign?: "left" | "center" | "right";
+  hAlign?: "left" | "center" | "right" | "justify";
   vAlign?: "top" | "center" | "bottom";
   fontName?: string;
   fontSize?: number;
@@ -128,7 +128,7 @@ export interface TableCellData {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
-  hAlign?: "left" | "center" | "right";
+  hAlign?: "left" | "center" | "right" | "justify";
   vAlign?: "top" | "center" | "bottom";
   colspan?: number;
   rowspan?: number;
