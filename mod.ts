@@ -35,7 +35,7 @@ function checkBrowserEnvironment(): void {
         "Solution: Move your code to a Fresh Island component.\n" +
         "Example: Create 'islands/DocxGenerator.tsx' and use DocXaur there.\n" +
         "\n" +
-        "See documentation: https://github.com/nekoprog/DocXaur",
+        "See documentation: https://github.com/fytz-my/DocXaur",
     );
   }
 }
@@ -109,6 +109,10 @@ export interface TableColumn {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  marginTop?: string;
+  marginRight?: string;
+  marginBottom?: string;
+  marginLeft?: string;
 }
 
 export interface TableOptions {
@@ -117,6 +121,10 @@ export interface TableOptions {
   align?: "left" | "center" | "right" | "justify";
   borders?: boolean;
   indent?: string;
+  marginTop?: string;
+  marginRight?: string;
+  marginBottom?: string;
+  marginLeft?: string;
 }
 
 export interface TableCellData {
@@ -133,6 +141,10 @@ export interface TableCellData {
   colspan?: number;
   rowspan?: number;
   height?: string;
+  marginTop?: string;
+  marginRight?: string;
+  marginBottom?: string;
+  marginLeft?: string;
 }
 
 // ============================================================================
@@ -935,6 +947,10 @@ export class Table extends Element {
           bold: colOptions?.bold,
           italic: colOptions?.italic,
           underline: colOptions?.underline,
+          marginTop: colOptions?.marginTop,
+          marginRight: colOptions?.marginRight,
+          marginBottom: colOptions?.marginBottom,
+          marginLeft: colOptions?.marginLeft,
         });
       } else {
         row.cell({
@@ -947,6 +963,10 @@ export class Table extends Element {
           bold: colOptions?.bold,
           italic: colOptions?.italic,
           underline: colOptions?.underline,
+          marginTop: colOptions?.marginTop,
+          marginRight: colOptions?.marginRight,
+          marginBottom: colOptions?.marginBottom,
+          marginLeft: colOptions?.marginLeft,
           ...cell, // Cell properties override column defaults
         });
       }
@@ -1079,6 +1099,54 @@ class TableCell {
     if (this.data.cellColor) {
       xml +=
         `            <w:shd w:val="clear" w:color="auto" w:fill="${this.data.cellColor}"/>\n`;
+    }
+
+    // NEW: Generate cell margin XML with proper fallback chain
+    // Priority: cell-level > column-level > table-level
+    const marginTop = this.data.marginTop ??
+      tableOptions.columns[colIndex]?.marginTop ??
+      tableOptions.marginTop;
+    const marginRight = this.data.marginRight ??
+      tableOptions.columns[colIndex]?.marginRight ??
+      tableOptions.marginRight;
+    const marginBottom = this.data.marginBottom ??
+      tableOptions.columns[colIndex]?.marginBottom ??
+      tableOptions.marginBottom;
+    const marginLeft = this.data.marginLeft ??
+      tableOptions.columns[colIndex]?.marginLeft ??
+      tableOptions.marginLeft;
+
+    // Generate tcMar element if any margins are defined
+    if (
+      marginTop !== undefined || marginRight !== undefined ||
+      marginBottom !== undefined || marginLeft !== undefined
+    ) {
+      xml += "            <w:tcMar>\n";
+
+      if (marginTop !== undefined) {
+        const parsedMarginTop = parseNumberTwips(marginTop);
+        xml += `              <w:top w:w="${parsedMarginTop}" w:type="dxa"/>\n`;
+      }
+
+      if (marginRight !== undefined) {
+        const parsedMarginRight = parseNumberTwips(marginRight);
+        xml +=
+          `              <w:end w:w="${parsedMarginRight}" w:type="dxa"/>\n`;
+      }
+
+      if (marginBottom !== undefined) {
+        const parsedMarginBottom = parseNumberTwips(marginBottom);
+        xml +=
+          `              <w:bottom w:w="${parsedMarginBottom}" w:type="dxa"/>\n`;
+      }
+
+      if (marginLeft !== undefined) {
+        const parsedMarginLeft = parseNumberTwips(marginLeft);
+        xml +=
+          `              <w:start w:w="${parsedMarginLeft}" w:type="dxa"/>\n`;
+      }
+
+      xml += "            </w:tcMar>\n";
     }
 
     xml += "          </w:tcPr>\n";
