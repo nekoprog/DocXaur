@@ -218,9 +218,9 @@ Creates a new paragraph builder.
 | `bold`           | `boolean`                                    | `false`          | Bold text                   |
 | `italic`         | `boolean`                                    | `false`          | Italic text                 |
 | `underline`      | `boolean`                                    | `false`          | Underlined text             |
-| `size`           | `number`                                     | Document default | Font size (pt)              |
-| `color`          | `string`                                     | `"000000"`       | Font color (hex without #)  |
-| `font`           | `string`                                     | Document default | Font family                 |
+| `fontSize`       | `number`                                     | Document default | Font size (pt)              |
+| `fontColor`      | `string`                                     | `"000000"`       | Font color (hex without #)  |
+| `fontName`       | `string`                                     | Document default | Font family                 |
 | `spacing.before` | `number`                                     | `0`              | Space before paragraph (pt) |
 | `spacing.after`  | `number`                                     | `0`              | Space after paragraph (pt)  |
 | `spacing.line`   | `number`                                     | `1.0`            | Line spacing multiplier     |
@@ -230,7 +230,7 @@ Creates a new paragraph builder.
 **Example:**
 
 ```typescript
-section.paragraph({ align: "center", size: 14 })
+section.paragraph({ align: "center", fontSize: 14 })
   .text("Hello ")
   .text("World", { bold: true, color: "FF0000" });
 ```
@@ -283,18 +283,18 @@ Creates a table builder.
 
 **TableColumn:**
 
-| Property          | Type                            | Required | Description                                         |
-| ----------------- | ------------------------------- | -------- | --------------------------------------------------- |
-| `width`           | `string`                        | Yes      | Column width (cm, pt, mm, in, %)                    |
-| `hAlign`          | `"left" \| "center" \| "right"` | No       | Default horizontal alignment for column             |
-| `vAlign`          | `"top" \| "center" \| "bottom"` | No       | Default vertical alignment for column               |
-| `fontName`        | `string`                        | No       | Default font family for column                      |
-| `fontSize`        | `number`                        | No       | Default font size for column (pt)                   |
-| `fontColor`       | `string`                        | No       | Default text color for column (hex without #)       |
-| `cellColor`       | `string`                        | No       | Default background color for column (hex without #) |
-| `bold`            | `boolean`                       | No       | Default bold styling for column                     |
-| `italic`          | `boolean`                       | No       | Default italic styling for column                   |
-| `underline`       | `boolean`                       | No       | Default underline styling for column                |
+| Property    | Type                            | Required | Description                                         |
+| ----------- | ------------------------------- | -------- | --------------------------------------------------- |
+| `width`     | `string`                        | Yes      | Column width (cm, pt, mm, in, %)                    |
+| `hAlign`    | `"left" \| "center" \| "right"` | No       | Default horizontal alignment for column             |
+| `vAlign`    | `"top" \| "center" \| "bottom"` | No       | Default vertical alignment for column               |
+| `fontName`  | `string`                        | No       | Default font family for column                      |
+| `fontSize`  | `number`                        | No       | Default font size for column (pt)                   |
+| `fontColor` | `string`                        | No       | Default text color for column (hex without #)       |
+| `cellColor` | `string`                        | No       | Default background color for column (hex without #) |
+| `bold`      | `boolean`                       | No       | Default bold styling for column                     |
+| `italic`    | `boolean`                       | No       | Default italic styling for column                   |
+| `underline` | `boolean`                       | No       | Default underline styling for column                |
 
 **Example:**
 
@@ -489,21 +489,21 @@ table.row(
 
 **TableCellData Properties:**
 
-| Property          | Type                            | Required | Description                                              |
-| ----------------- | ------------------------------- | -------- | -------------------------------------------------------- |
-| `text`            | `string`                        | ✅ Yes   | Cell content                                             |
-| `fontName`        | `string`                        | No       | Font family (e.g., "Arial", "Times New Roman")           |
-| `fontSize`        | `number`                        | No       | Font size in points (e.g., 12)                           |
-| `fontColor`       | `string`                        | No       | Text color (hex without #, e.g., "FF0000")               |
-| `cellColor`       | `string`                        | No       | Background color (hex without #, e.g., "E0E0E0")         |
-| `bold`            | `boolean`                       | No       | Bold text                                                |
-| `italic`          | `boolean`                       | No       | Italic text                                              |
-| `underline`       | `boolean`                       | No       | Underlined text                                          |
-| `hAlign`          | `"left" \| "center" \| "right"` | No       | Horizontal alignment (default: column align or "center") |
-| `vAlign`          | `"top" \| "center" \| "bottom"` | No       | Vertical alignment (default: "center")                   |
-| `colspan`         | `number`                        | No       | Number of columns to span                                |
-| `rowspan`         | `number`                        | No       | Number of rows to span (use 0 for continuation)          |
-| `height`          | `string`                        | No       | Cell height (e.g., "1cm", "20pt")                        |
+| Property    | Type                            | Required | Description                                              |
+| ----------- | ------------------------------- | -------- | -------------------------------------------------------- |
+| `text`      | `string`                        | ✅ Yes   | Cell content                                             |
+| `fontName`  | `string`                        | No       | Font family (e.g., "Arial", "Times New Roman")           |
+| `fontSize`  | `number`                        | No       | Font size in points (e.g., 12)                           |
+| `fontColor` | `string`                        | No       | Text color (hex without #, e.g., "FF0000")               |
+| `cellColor` | `string`                        | No       | Background color (hex without #, e.g., "E0E0E0")         |
+| `bold`      | `boolean`                       | No       | Bold text                                                |
+| `italic`    | `boolean`                       | No       | Italic text                                              |
+| `underline` | `boolean`                       | No       | Underlined text                                          |
+| `hAlign`    | `"left" \| "center" \| "right"` | No       | Horizontal alignment (default: column align or "center") |
+| `vAlign`    | `"top" \| "center" \| "bottom"` | No       | Vertical alignment (default: "center")                   |
+| `colspan`   | `number`                        | No       | Number of columns to span                                |
+| `rowspan`   | `number`                        | No       | Number of rows to span (use 0 for continuation)          |
+| `height`    | `string`                        | No       | Cell height (e.g., "1cm", "20pt")                        |
 
 **Examples:**
 

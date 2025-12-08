@@ -76,9 +76,9 @@ export interface TextStyle {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
-  size?: number;
-  color?: string;
-  font?: string;
+  fontSize?: number;
+  fontColor?: string;
+  fontName?: string;
 }
 
 export interface ParagraphOptions extends TextStyle {
@@ -128,7 +128,12 @@ export interface TableOptions {
 }
 
 export interface TableCellData {
-  text: string;
+  text?: string;
+  image?: {
+    url: string;
+    width?: string;
+    height?: string;
+  };
   fontName?: string;
   fontSize?: number;
   fontColor?: string;
@@ -427,7 +432,7 @@ export class DocXaur {
     );
     await zipWriter.add(
       "word/document.xml",
-      new TextReader(this.generateDocument()),
+      new TextReader(await this.generateDocumentAsync()),
     );
     await zipWriter.add(
       "word/styles.xml",
@@ -524,18 +529,18 @@ export class DocXaur {
     return `rId${imageId + 3}`;
   }
 
-  private generateDocument(): string {
+  private async generateDocumentAsync(): Promise<string> {
     let xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
-            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
-            xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
-            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <w:body>
-`;
+  <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+              xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+              xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+              xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
+              xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <w:body>
+  `;
 
     for (const section of this.sections) {
-      xml += section.toXML();
+      xml += await section.toXMLAsync();
     }
 
     if (this.sections.length > 0) {
@@ -544,7 +549,7 @@ export class DocXaur {
     }
 
     xml += `  </w:body>
-</w:document>`;
+  </w:document>`;
 
     return xml;
   }
@@ -632,7 +637,11 @@ export class Section {
   ): this {
     const sizes = [24, 20, 18, 16, 14, 12];
     const paragraph = new Paragraph(options);
-    paragraph.text(content, { bold: true, size: sizes[level - 1], ...options });
+    paragraph.text(content, {
+      bold: true,
+      fontSize: sizes[level - 1],
+      ...options,
+    });
     this.elements.push(paragraph);
     return this;
   }
@@ -645,6 +654,7 @@ export class Section {
 
   table(options: TableOptions): Table {
     const table = new Table(options);
+    table.setDoc(this.doc);
     this.elements.push(table);
     return table;
   }
@@ -663,7 +673,13 @@ export class Section {
   //   return this;
   // }
 
-  toXML(): string {
+  async toXMLAsync(): Promise<string> {
+    // ✅ Initialize all table images first
+    for (const element of this.elements) {
+      if (element instanceof Table) {
+        await element.initImages();
+      }
+    }
     return this.elements.map((el) => el.toXML()).join("\n");
   }
 
@@ -786,15 +802,17 @@ export class Paragraph extends Element {
           if (style.bold) xml += "          <w:b/>\n";
           if (style.italic) xml += "          <w:i/>\n";
           if (style.underline) xml += '          <w:u w:val="single"/>\n';
-          if (style.size) {
-            xml += `          <w:sz w:val="${ptToHalfPoints(style.size)}"/>\n`;
+          if (style.fontSize) {
+            xml += `          <w:sz w:val="${
+              ptToHalfPoints(style.fontSize)
+            }"/>\n`;
           }
-          if (style.color) {
-            xml += `          <w:color w:val="${style.color}"/>\n`;
+          if (style.fontColor) {
+            xml += `          <w:color w:val="${style.fontColor}"/>\n`;
           }
-          if (style.font) {
+          if (style.fontName) {
             xml +=
-              `          <w:rFonts w:ascii="${style.font}" w:hAnsi="${style.font}"/>\n`;
+              `          <w:rFonts w:ascii="${style.fontName}" w:hAnsi="${style.fontName}"/>\n`;
           }
           xml += "        </w:rPr>\n";
         }
@@ -817,7 +835,7 @@ export class Paragraph extends Element {
 
   private hasRunProperties(style: TextStyle): boolean {
     return !!(style.bold || style.italic || style.underline ||
-      style.size || style.color || style.font);
+      style.fontSize || style.fontColor || style.fontName);
   }
 }
 
@@ -920,6 +938,7 @@ export class Image extends Element {
 export class Table extends Element {
   private rows: TableRow[] = [];
   private options: TableOptions;
+  private doc?: DocXaur;
 
   constructor(options: TableOptions) {
     super();
@@ -927,6 +946,15 @@ export class Table extends Element {
     if (this.options.borders === undefined) {
       this.options.borders = true;
     }
+  }
+
+  setDoc(doc: DocXaur): void {
+    this.doc = doc;
+  }
+
+  async initImages(): Promise<void> {
+    if (!this.doc) throw new Error("Table not attached to document");
+    await Promise.all(this.rows.map((row) => row.initCells(this.doc!)));
   }
 
   row(...cells: (string | TableCellData)[]): this {
@@ -984,6 +1012,8 @@ export class Table extends Element {
   }
 
   toXML(): string {
+    if (!this.doc) throw new Error("Table not attached to document");
+
     const align = this.options.align || "center";
 
     let xml = "    <w:tbl>\n";
@@ -1022,7 +1052,7 @@ export class Table extends Element {
     xml += "      </w:tblGrid>\n";
 
     for (const row of this.rows) {
-      xml += row.toXML();
+      xml += row.toXML(this.doc);
     }
 
     xml += "    </w:tbl>\n";
@@ -1040,11 +1070,14 @@ class TableRow {
     return this;
   }
 
-  toXML(): string {
+  async initCells(doc: DocXaur): Promise<void> {
+    await Promise.all(this.cells.map((cell) => cell.init(doc)));
+  }
+
+  toXML(doc: DocXaur): string {
     let xml = "      <w:tr>\n";
 
-    // Calculate max height from all cells
-    let maxHeight = 170; // default
+    let maxHeight = 170;
     for (const cell of this.cells) {
       const cellHeight = cell.getHeight();
       if (cellHeight > maxHeight) {
@@ -1057,7 +1090,7 @@ class TableRow {
     xml += "        </w:trPr>\n";
 
     for (let i = 0; i < this.cells.length; i++) {
-      xml += this.cells[i].toXML(i, this.tableOptions);
+      xml += this.cells[i].toXML(i, this.tableOptions, doc); // ✅ Pass doc
     }
 
     xml += "      </w:tr>\n";
@@ -1066,7 +1099,14 @@ class TableRow {
 }
 
 class TableCell {
+  private imageId?: number;
   constructor(private data: TableCellData) {}
+
+  async init(doc: DocXaur): Promise<void> {
+    if (this.data.image) {
+      this.imageId = await doc.registerImage(this.data.image.url);
+    }
+  }
 
   getHeight(): number {
     if (this.data.height) {
@@ -1075,12 +1115,11 @@ class TableCell {
     return 170; // default ~0.3cm
   }
 
-  toXML(colIndex: number, tableOptions: TableOptions): string {
+  toXML(colIndex: number, tableOptions: TableOptions, doc: DocXaur): string {
     const vAlign = this.data.vAlign || "center";
     const align = this.data.hAlign || "center";
 
     let xml = "        <w:tc>\n";
-
     xml += "          <w:tcPr>\n";
     const colWidth = parseNumberTwips(tableOptions.columns[colIndex].width);
     xml += `            <w:tcW w:w="${colWidth}" w:type="dxa"/>\n`;
@@ -1101,8 +1140,6 @@ class TableCell {
         `            <w:shd w:val="clear" w:color="auto" w:fill="${this.data.cellColor}"/>\n`;
     }
 
-    // NEW: Generate cell margin XML with proper fallback chain
-    // Priority: cell-level > column-level > table-level
     const marginTop = this.data.marginTop ??
       tableOptions.columns[colIndex]?.marginTop ??
       tableOptions.marginTop;
@@ -1116,7 +1153,6 @@ class TableCell {
       tableOptions.columns[colIndex]?.marginLeft ??
       tableOptions.marginLeft;
 
-    // Generate tcMar element if any margins are defined
     if (
       marginTop !== undefined || marginRight !== undefined ||
       marginBottom !== undefined || marginLeft !== undefined
@@ -1151,9 +1187,82 @@ class TableCell {
 
     xml += "          </w:tcPr>\n";
 
-    xml += "          <w:p>\n";
-    xml += "            <w:pPr>\n";
+    // ✅ ADD: Check if image or text
+    if (this.data.image && this.imageId !== undefined) {
+      xml += this.renderImageInCell(doc);
+    } else {
+      xml += this.renderTextInCell();
+    }
+
+    xml += "        </w:tc>\n";
+
+    return xml;
+  }
+
+  private renderImageInCell(doc: DocXaur): string {
+    const img = this.data.image!;
+    const width = img.width ? parseImageSize(img.width) : cmToEmu(5);
+    const height = img.height ? parseImageSize(img.height) : width;
+    const hAlign = this.data.hAlign || "center";
+    const relId = doc.getImageRelId(this.imageId!);
+    const drawingId = Image.imageCounter++;
+
+    let xml = "          <w:p>\n";
+
+    if (hAlign !== "left") {
+      xml += "            <w:pPr>\n";
+      xml += `              <w:jc w:val="${hAlign}"/>\n`;
+      xml += "            </w:pPr>\n";
+    }
+
+    xml += `            <w:r>
+                 <w:drawing>
+                   <wp:inline distT="0" distB="0" distL="0" distR="0">
+                     <wp:extent cx="${width}" cy="${height}"/>
+                     <wp:effectExtent l="0" t="0" r="0" b="0"/>
+                     <wp:docPr id="${drawingId}" name="Picture ${drawingId}"/>
+                     <wp:cNvGraphicFramePr>
+                       <a:graphicFrameLocks noChangeAspect="1"/>
+                     </wp:cNvGraphicFramePr>
+                     <a:graphic>
+                       <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                         <pic:pic>
+                           <pic:nvPicPr>
+                             <pic:cNvPr id="${drawingId}" name="Picture ${drawingId}"/>
+                             <pic:cNvPicPr/>
+                           </pic:nvPicPr>
+                           <pic:blipFill>
+                             <a:blip r:embed="${relId}"/>
+                             <a:stretch>
+                               <a:fillRect/>
+                             </a:stretch>
+                           </pic:blipFill>
+                           <pic:spPr>
+                             <a:xfrm>
+                               <a:off x="0" y="0"/>
+                               <a:ext cx="${width}" cy="${height}"/>
+                             </a:xfrm>
+                             <a:prstGeom prst="rect">
+                               <a:avLst/>
+                             </a:prstGeom>
+                           </pic:spPr>
+                         </pic:pic>
+                       </a:graphicData>
+                     </a:graphic>
+                   </wp:inline>
+                 </w:drawing>
+               </w:r>
+             </w:p>\n`;
+
+    return xml;
+  }
+
+  private renderTextInCell(): string {
+    const align = this.data.hAlign || "center";
     const jc = align === "justify" ? "both" : align;
+
+    let xml = "          <w:p>\n";
+    xml += "            <w:pPr>\n";
     xml += `              <w:jc w:val="${jc}"/>\n`;
     xml += "            </w:pPr>\n";
     xml += "            <w:r>\n";
@@ -1184,11 +1293,10 @@ class TableCell {
     }
 
     xml += `              <w:t xml:space="preserve">${
-      escapeXML(this.data.text)
+      escapeXML(this.data.text || "")
     }</w:t>\n`;
     xml += "            </w:r>\n";
     xml += "          </w:p>\n";
-    xml += "        </w:tc>\n";
 
     return xml;
   }
