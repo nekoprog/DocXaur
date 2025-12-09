@@ -864,6 +864,10 @@ export class Paragraph extends Element {
 export class Image extends Element {
   private static imageCounter = 1;
 
+  static getNextDrawingId(): number {
+    return Image.imageCounter++;
+  }
+
   constructor(
     private imageId: number,
     private doc: DocXaur,
@@ -881,7 +885,7 @@ export class Image extends Element {
       : width;
     const align = this.options.align || "center";
     const relId = this.doc.getImageRelId(this.imageId);
-    const drawingId = Image.imageCounter++;
+    const drawingId = Image.getNextDrawingId();
 
     let xml = "    <w:p>\n";
 
@@ -1205,7 +1209,7 @@ class TableCell {
     const height = img.height ? parseImageSize(img.height) : width;
     const hAlign = this.data.hAlign || "center";
     const relId = doc.getImageRelId(this.imageId!);
-    const drawingId = Image.imageCounter++;
+    const drawingId = Image.getNextDrawingId();
 
     let xml = "          <w:p>\n";
 
