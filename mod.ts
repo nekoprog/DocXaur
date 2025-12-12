@@ -369,30 +369,32 @@ export class DocXaur {
     const blobWriter = new BlobWriter();
     const zipWriter = new ZipWriter(blobWriter);
 
+    // Base package parts
     await zipWriter.add(
       "[Content_Types].xml",
       new TextReader(this.generateContentTypes()),
     );
     await zipWriter.add("_rels/.rels", new TextReader(this.generateRootRels()));
 
-    // 🔁 THIS BLOCK IS THE REPLACEMENT
+    // 1) Generate the document FIRST so table images get registered during Section.toXMLAsync()
+    const docXml = await this.generateDocumentAsync();
+
+    // 2) Build relationships with the guard, now that all images are known
     const rawDocRels = this.generateDocRels();
     const imageRels = Array.from(this.images.entries()).map(([url, d]) => ({
-      rid: `rId${d.id + 3}`, // rId4.. for images
-      target: `media/image${d.id}.${d.extension}`, // matches what we add under word/media
+      rid: `rId${d.id + 3}`, // rId4.. for images (rId1-3 reserved)
+      target: `media/image${d.id}.${d.extension}`, // matches files added under word/media
     }));
     const fixedDocRels = ensureImageRelationships(rawDocRels, imageRels);
 
+    // Write rels and document (after doc generation)
     await zipWriter.add(
       "word/_rels/document.xml.rels",
       new TextReader(fixedDocRels),
     );
-    // 🔁 END OF REPLACEMENT
+    await zipWriter.add("word/document.xml", new TextReader(docXml));
 
-    await zipWriter.add(
-      "word/document.xml",
-      new TextReader(await this.generateDocumentAsync()),
-    );
+    // Other Word parts
     await zipWriter.add(
       "word/styles.xml",
       new TextReader(this.generateStyles()),
@@ -406,6 +408,7 @@ export class DocXaur {
       new TextReader(this.generateSettings()),
     );
 
+    // 3) Add image binaries
     console.log("📦 Adding images to DOCX:");
     for (const [url, imgData] of this.images) {
       const filename = `word/media/image${imgData.id}.${imgData.extension}`;
