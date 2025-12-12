@@ -12,6 +12,7 @@
  */
 
 import { BlobReader, BlobWriter, TextReader, ZipWriter } from "@zip-js/zip-js";
+import { extension } from "@std/media-types";
 
 // ============================================================================
 // ENVIRONMENT CHECK
@@ -242,26 +243,41 @@ async function fetchImageAsBase64(
       );
     }
 
+    console.log(`🔍 Fetching image from: ${url}`);
     const response = await fetch(url);
+
     if (!response.ok) {
       throw new Error(
         `Failed to fetch image: ${response.status} ${response.statusText}`,
       );
     }
 
+    console.log(`✅ Image fetched successfully: ${url}`);
+
     const arrayBuffer = await response.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
+
+    console.log(`📦 Image size: ${bytes.length} bytes`);
+
     let binary = "";
     for (let i = 0; i < bytes.length; i++) {
       binary += String.fromCharCode(bytes[i]);
     }
     const base64 = btoa(binary);
 
-    const extension =
-      url.toLowerCase().match(/\.(png|jpg|jpeg|gif|bmp)$/)?.[1] || "png";
+    console.log(`🔐 Base64 length: ${base64.length}`);
 
-    return { data: base64, extension };
+    // ✅ Get extension from Content-Type using @std/media-types
+    const contentType =
+      response.headers.get("Content-Type")?.split(";")[0].trim() || "";
+    console.log(`📄 Content-Type: ${contentType}`);
+
+    const ext = extension(contentType) || "png";
+    console.log(`📝 Detected extension: ${ext}`);
+
+    return { data: base64, extension: ext };
   } catch (error) {
+    console.error(`❌ Failed to load image from "${url}":`, error);
     throw new Error(
       `Failed to load image from "${url}":\n${error}\n\n` +
         "Tip: Make sure the image URL is publicly accessible and supports CORS.",
