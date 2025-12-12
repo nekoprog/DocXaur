@@ -1,9 +1,10 @@
 {
   "name": "@fytz/docxaur",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "license": "Apache 2.0",
   "imports": {
-    "@zip-js/zip-js": "jsr:@zip-js/zip-js@^2.8.8"
+    "@zip-js/zip-js": "jsr:@zip-js/zip-js@^2.8.8",
+    "@std/media-types": "jsr:@std/media-types@^1.1.0"
   },
   "exports": "./mod.ts",
   "compilerOptions": {
