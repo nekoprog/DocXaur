@@ -1,12 +1,12 @@
 {
   "name": "@fytz/docxaur",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "license": "Apache 2.0",
   "imports": {
     "@zip-js/zip-js": "jsr:@zip-js/zip-js@^2.8.8",
     "@std/media-types": "jsr:@std/media-types@^1.1.0"
   },
-  "exports": "./mod.ts",
+  "exports": "./src/mod.ts",
   "compilerOptions": {
     "lib": ["deno.ns", "dom"]
   }

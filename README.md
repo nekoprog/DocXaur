@@ -10,7 +10,7 @@ work in server-side routes, middleware, or Deno runtime.
 ## Installation
 
 ```typescript
-import { DocXaur } from "jsr:@yourscope/docxaur";
+import { DocXaur } from "jsr:@fytz/docxaur";
 ```
 
 ---
@@ -30,7 +30,7 @@ import { DocXaur } from "jsr:@yourscope/docxaur";
 
 ```typescript
 // islands/DocumentGenerator.tsx
-import { DocXaur } from "jsr:@yourscope/docxaur";
+import { DocXaur } from "jsr:@fytz/docxaur";
 
 export default function DocumentGenerator() {
   const generateDoc = async () => {
@@ -967,7 +967,7 @@ await doc.download("typography-showcase.docx");
 ```typescript
 // ✅ CORRECT - Fresh Island
 // islands/MyDocumentGenerator.tsx
-import { DocXaur } from "jsr:@yourscope/docxaur";
+import { DocXaur } from "jsr:@fytz/docxaur";
 
 export default function MyDocumentGenerator() {
   const generate = async () => {
@@ -979,7 +979,7 @@ export default function MyDocumentGenerator() {
 
 // ❌ WRONG - Server-side route
 // routes/api/generate.ts
-import { DocXaur } from "jsr:@yourscope/docxaur";
+import { DocXaur } from "jsr:@fytz/docxaur";
 // This will throw an error!
 ```
 
@@ -1632,7 +1632,7 @@ MIT License
 ## Support
 
 For issues and questions, please visit:
-[GitHub Issues](https://github.com/yourrepo/docxaur/issues)
+[GitHub Issues](https://github.com/fytz-my/DocXaur/issues)
 
 ---
 
