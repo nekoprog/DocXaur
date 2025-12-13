@@ -37,9 +37,9 @@ class TableRow {
       if (h > maxHeight) maxHeight = h;
     }
     xml += `    <w:trPr>
-      <w:trHeight w:val="${maxHeight}" w:hRule="atLeast"/>
-    </w:trPr>
-`;
+       <w:trHeight w:val="${maxHeight}" w:hRule="atLeast"/>
+     </w:trPr>
+ `;
     for (let i = 0; i < this.cells.length; i++) {
       xml += this.cells[i].toXML(i, this.tableOptions, section);
     }
@@ -139,37 +139,37 @@ class TableCell {
         xml += "        </w:pPr>\n";
       }
       xml += `        <w:r>
-          <w:drawing>
-            <wp:inline distT="0" distB="0" distL="0" distR="0">
-              <wp:extent cx="${width}" cy="${height}"/>
-              <wp:effectExtent l="0" t="0" r="0" b="0"/>
-              <wp:docPr id="${drawId}" name="Picture ${drawId}"/>
-              <wp:cNvGraphicFramePr>
-                <a:graphicFrameLocks noChangeAspect="1"/>
-              </wp:cNvGraphicFramePr>
-              <a:graphic>
-                <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
-                  <pic:pic>
-                    <pic:nvPicPr>
-                      <pic:cNvPr id="${drawId}" name="Picture ${drawId}"/>
-                      <pic:cNvPicPr/>
-                    </pic:nvPicPr>
-                    <pic:blipFill>
-                      <a:blip r:embed="${relId}"/>
-                      <a:stretch><a:fillRect/></a:stretch>
-                    </pic:blipFill>
-                    <pic:spPr>
-                      <a:xfrm><a:off x="0" y="0"/><a:ext cx="${width}" cy="${height}"/></a:xfrm>
-                      <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-                    </pic:spPr>
-                  </pic:pic>
-                </a:graphicData>
-              </a:graphic>
-            </wp:inline>
-          </w:drawing>
-        </w:r>
-      </w:p>
-`;
+           <w:drawing>
+             <wp:inline distT="0" distB="0" distL="0" distR="0">
+               <wp:extent cx="${width}" cy="${height}"/>
+               <wp:effectExtent l="0" t="0" r="0" b="0"/>
+               <wp:docPr id="${drawId}" name="Picture ${drawId}"/>
+               <wp:cNvGraphicFramePr>
+                 <a:graphicFrameLocks noChangeAspect="1"/>
+               </wp:cNvGraphicFramePr>
+               <a:graphic>
+                 <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                   <pic:pic>
+                     <pic:nvPicPr>
+                       <pic:cNvPr id="${drawId}" name="Picture ${drawId}"/>
+                       <pic:cNvPicPr/>
+                     </pic:nvPicPr>
+                     <pic:blipFill>
+                       <a:blip r:embed="${relId}"/>
+                       <a:stretch><a:fillRect/></a:stretch>
+                     </pic:blipFill>
+                     <pic:spPr>
+                       <a:xfrm><a:off x="0" y="0"/><a:ext cx="${width}" cy="${height}"/></a:xfrm>
+                       <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                     </pic:spPr>
+                   </pic:pic>
+                 </a:graphicData>
+               </a:graphic>
+             </wp:inline>
+           </w:drawing>
+         </w:r>
+       </w:p>
+ `;
     } else {
       const jc = align === "justify" ? "both" : align;
       xml += "      <w:p>\n";
@@ -186,13 +186,18 @@ class TableCell {
   }
 }
 
+/**
+ * Table block.
+ *
+ * Construct tables by defining columns in `TableOptions` and adding rows via
+ * `.row(...)`. Use `section.table(options)` to obtain a `Table` tied to a
+ * section — Table requires a Section context to resolve images and sizing.
+ */
 export class Table extends Element {
   private rowDefs: Array<(string | TableCellData)[]> = [];
   private rows: TableRow[] = [];
   private options: TableOptions;
   private isBuilt = false;
-
-  public _buildPromise?: Promise<void>;
 
   constructor(options: TableOptions) {
     super();
@@ -287,14 +292,14 @@ export class Table extends Element {
     xml += `      <w:jc w:val="${align}"/>\n`;
     if (this.options.borders) {
       xml += `      <w:tblBorders>
-        <w:top    w:val="single" w:sz="4" w:space="0" w:color="000000"/>
-        <w:left   w:val="single" w:sz="4" w:space="0" w:color="000000"/>
-        <w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/>
-        <w:right  w:val="single" w:sz="4" w:space="0" w:color="000000"/>
-        <w:insideH w:val="single" w:sz="4" w:space="0" w:color="000000"/>
-        <w:insideV w:val="single" w:sz="4" w:space="0" w:color="000000"/>
-      </w:tblBorders>
-`;
+         <w:top    w:val="single" w:sz="4" w:space="0" w:color="000000"/>
+         <w:left   w:val="single" w:sz="4" w:space="0" w:color="000000"/>
+         <w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/>
+         <w:right  w:val="single" w:sz="4" w:space="0" w:color="000000"/>
+         <w:insideH w:val="single" w:sz="4" w:space="0" w:color="000000"/>
+         <w:insideV w:val="single" w:sz="4" w:space="0" w:color="000000"/>
+       </w:tblBorders>
+ `;
     }
     xml += "    </w:tblPr>\n";
     xml += "    <w:tblGrid>\n";

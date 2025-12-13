@@ -20,6 +20,10 @@ import { Element } from "./element.ts";
 
 type TableBridge = Element & { _table?: Table };
 
+/**
+ * Section — holds a sequence of Elements and provides convenience methods
+ * for creating blocks in this section and producing the section XML.
+ */
 export class Section {
   private elements: Element[] = [];
   private options: Required<SectionOptions>;
@@ -55,9 +59,7 @@ export class Section {
     for (const el of this.elements) {
       const bridge = el as TableBridge;
       if (bridge._table) {
-        if (bridge._table._buildPromise) {
-          await bridge._table._buildPromise;
-        }
+        await bridge._table.buildRows(this);
       }
       xml += el.toXML() + "\n";
     }
@@ -73,17 +75,16 @@ export class Section {
       ? "landscape"
       : "portrait";
     return `  <w:sectPr>
-    <w:pgSz w:w="${widthTwips}" w:h="${heightTwips}" w:orient="${orient}"/>
-    <w:pgMar w:top="${parseNumberTwips(margins.top)}"
-             w:right="${parseNumberTwips(margins.right)}"
-             w:bottom="${parseNumberTwips(margins.bottom)}"
-             w:left="${parseNumberTwips(margins.left)}"
-             w:header="720" w:footer="720" w:gutter="0"/>
-  </w:sectPr>
-`;
+     <w:pgSz w:w="${widthTwips}" w:h="${heightTwips}" w:orient="${orient}"/>
+     <w:pgMar w:top="${parseNumberTwips(margins.top)}"
+              w:right="${parseNumberTwips(margins.right)}"
+              w:bottom="${parseNumberTwips(margins.bottom)}"
+              w:left="${parseNumberTwips(margins.left)}"
+              w:header="720" w:footer="720" w:gutter="0"/>
+   </w:sectPr>
+ `;
   }
 
-  // === Block methods ===
   paragraph(options?: ParagraphOptions): Paragraph {
     const p = new Paragraph(options);
     this._push(p);
@@ -110,7 +111,6 @@ export class Section {
 
   table(options: TableOptions): Table {
     const t = new Table(options);
-    t._buildPromise = t.buildRows(this);
 
     const bridgeSection = this;
     const bridge: TableBridge = new (class extends Element {
