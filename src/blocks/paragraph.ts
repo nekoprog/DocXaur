@@ -1,10 +1,15 @@
 /**
- * Paragraph builder.
- * @module
+ * Paragraph builder block.
+ *
+ * Use an instance to accumulate runs (text, breaks, tabs, page breaks) and
+ * then call `toXML()` to get the WordprocessingML fragment for the paragraph.
+ *
+ * Example:
+ *   section.paragraph().text("Hello").text(" world", { bold: true });
  */
 import { escapeXML, ptToHalfPoints } from "../core/utils.ts";
 import type { ParagraphOptions } from "../core/docxaur.ts";
-import { Element } from "./section.ts";
+import { Element } from "./element.ts";
 
 interface TextRun {
   text: string;

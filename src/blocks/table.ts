@@ -1,6 +1,9 @@
 /**
  * Table block.
- * @module
+ *
+ * Construct tables by defining columns in `TableOptions` and adding rows via
+ * `.row(...)`. Use `section.table(options)` to obtain a `Table` tied to a
+ * section — Table requires a Section context to resolve images and sizing.
  */
 import { cmToEmu, parseImageSize, parseNumberTwips } from "../core/utils.ts";
 import type {
@@ -8,7 +11,8 @@ import type {
   TableColumn,
   TableOptions,
 } from "../core/docxaur.ts";
-import { Element, Section } from "./section.ts";
+import { Element } from "./element.ts";
+import type { Section } from "./section.ts";
 import { Image } from "./image.ts";
 
 class TableRow {

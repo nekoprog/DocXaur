@@ -1,6 +1,9 @@
 /**
- * Base Section: holds elements and common APIs.
- * @module
+ * Section — holds a sequence of Elements and provides convenience methods
+ * for creating blocks (paragraph, image, table, heading, etc.) in this section.
+ *
+ * The `Section` is responsible for maintaining section options (page size,
+ * margins) and for producing section-level properties when building the doc.
  */
 import { parseNumberTwips } from "../core/utils.ts";
 import type {
@@ -13,10 +16,7 @@ import type {
 import { Paragraph } from "./paragraph.ts";
 import { Image } from "./image.ts";
 import { Table } from "./table.ts";
-
-export abstract class Element {
-  abstract toXML(): string;
-}
+import { Element } from "./element.ts";
 
 export class Section {
   private elements: Element[] = [];

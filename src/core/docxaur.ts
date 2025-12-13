@@ -1,6 +1,9 @@
 /**
  * DocXaur: semantic DOCX generator for Fresh islands.
  * @module
+ *
+ * This module exports the main `DocXaur` builder and the public option
+ * interfaces used by the rest of the library.
  */
 import { BlobReader, BlobWriter, TextReader, ZipWriter } from "@zip-js/zip-js";
 import {
@@ -12,24 +15,40 @@ import {
 import { ensureImageRelationships } from "./relationships.ts";
 import { Section } from "../blocks/section.ts";
 
+/** Document-level configuration options. */
 export interface DocumentOptions {
+  /** Title of the document. */
   title?: string;
+  /** Creator/author. */
   creator?: string;
+  /** Short description. */
   description?: string;
+  /** Subject. */
   subject?: string;
+  /** Keywords for the document. */
   keywords?: string;
+  /** Default font family for the document. */
   fontName?: string;
+  /** Default font size (points). */
   fontSize?: number;
 }
+
+/** Options for constructing a Section. */
 export interface SectionOptions {
+  /** Page size for the section. */
   pageSize?: PageSize;
+  /** Margins for the section. */
   margins?: Margins;
 }
+
+/** Page size specification. */
 export interface PageSize {
   width: string;
   height: string;
   orientation?: "portrait" | "landscape";
 }
+
+/** Page margins specification. */
 export interface Margins {
   top: string;
   right: string;
@@ -37,11 +56,14 @@ export interface Margins {
   left: string;
 }
 
+/** Options when creating or embedding images. */
 export interface ImageOptions {
   width?: string;
   height?: string;
   align?: "left" | "center" | "right" | "justify";
 }
+
+/** Paragraph styling options. */
 export interface ParagraphOptions {
   align?: "left" | "center" | "right" | "justify";
   bold?: boolean;
@@ -54,6 +76,8 @@ export interface ParagraphOptions {
   breakBefore?: number;
   breakAfter?: number;
 }
+
+/** Table column configuration. */
 export interface TableColumn {
   width: string;
   hAlign?: "left" | "center" | "right" | "justify";
@@ -70,6 +94,8 @@ export interface TableColumn {
   marginBottom?: string;
   marginLeft?: string;
 }
+
+/** Options for Table creation. */
 export interface TableOptions {
   columns: TableColumn[];
   width?: string;
@@ -81,6 +107,8 @@ export interface TableOptions {
   marginBottom?: string;
   marginLeft?: string;
 }
+
+/** Table cell data shape. */
 export interface TableCellData {
   text?: string;
   image?: { url: string; width?: string; height?: string };
@@ -104,6 +132,13 @@ export interface TableCellData {
 
 type ImageMapValue = { data: string; extension: string; id: number };
 
+/**
+ * The main DocXaur builder class.
+ *
+ * Use `new DocXaur(options)` to create a document, add sections via
+ * `.addSection(...)`, then call `.toBlob()` or `.download()` to obtain the
+ * generated .docx file.
+ */
 export class DocXaur {
   private sections: Section[] = [];
   private options: DocumentOptions;

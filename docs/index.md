@@ -17,7 +17,7 @@ that JSR generates from our JSDoc comments.
 ## Quick Start
 
 ```ts
-import { DocXaur } from "jsr:@your-scope/docxaur";
+import { DocXaur } from "jsr:@fytz/docxaur";
 
 const doc = new DocXaur({ title: "My Document" });
 const section = doc.addSection();
@@ -28,4 +28,4 @@ section.paragraph().text("This is a paragraph.");
 await doc.download("my-document.docx");
 ```
 
-> Works in **Fresh Islands** (browser) only.
+Works in **Fresh Islands** (browser) only.

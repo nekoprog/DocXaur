@@ -1,19 +1,27 @@
 /**
  * Core utilities for DocXaur.
  * @module
+ *
+ * Provides unit conversion and parsing helpers used by other modules.
  */
 import { extension } from "@std/media-types";
 
+/** Convert centimeters to Word twips (1 cm ≈ 567 twips). */
 export function cmToTwips(cm: number): number {
   return Math.round(cm * 567);
 }
+
+/** Convert centimeters to EMU units (used in drawing extents). */
 export function cmToEmu(cm: number): number {
   return Math.round(cm * 360000);
 }
+
+/** Convert points to half-points (Word uses half-points in many places). */
 export function ptToHalfPoints(pt: number): number {
   return Math.round(pt * 2);
 }
 
+/** Parse dimension strings like "21cm", "100pt", "50mm" to twips. */
 export function parseNumberTwips(width: string): number {
   const match = width.match(/^([\d.]+)(cm|pt|mm|in|%)$/);
   if (!match) return 1000;
@@ -35,6 +43,7 @@ export function parseNumberTwips(width: string): number {
   }
 }
 
+/** Convert base64 string to ArrayBuffer. */
 export function base64ToArrayBuffer(base64: string): ArrayBuffer {
   const binary = atob(base64);
   const len = binary.length;
@@ -43,6 +52,7 @@ export function base64ToArrayBuffer(base64: string): ArrayBuffer {
   return bytes.buffer;
 }
 
+/** Parse image size strings like "5cm", "100px", "72pt" into EMU units. */
 export function parseImageSize(size: string): number {
   const match = size.match(/^([\d.]+)(cm|pt|mm|in|px)$/);
   if (!match) return cmToEmu(5);
@@ -64,6 +74,7 @@ export function parseImageSize(size: string): number {
   }
 }
 
+/** Escape a string for insertion into XML text nodes. */
 export function escapeXML(str: string): string {
   return str
     .replace(/&/g, "&amp;")
@@ -73,6 +84,10 @@ export function escapeXML(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
+/**
+ * Fetch an image and return its base64 data and file extension.
+ * Accepts http(s) URLs and absolute paths starting with "/".
+ */
 export async function fetchImageAsBase64(
   url: string,
 ): Promise<{ data: string; extension: string }> {

@@ -9,7 +9,7 @@ work in server-side routes, middleware, or Deno runtime.
 
 ## Installation
 
-```typescript
+```ts
 import { DocXaur } from "jsr:@fytz/docxaur";
 ```
 
@@ -28,7 +28,7 @@ import { DocXaur } from "jsr:@fytz/docxaur";
 
 ## Quick Start
 
-```typescript
+```ts
 // islands/DocumentGenerator.tsx
 import { DocXaur } from "jsr:@fytz/docxaur";
 
@@ -55,7 +55,7 @@ Main class for creating DOCX documents.
 
 ### Constructor
 
-```typescript
+```ts
 new DocXaur(options?: DocumentOptions)
 ```
 
@@ -73,7 +73,7 @@ new DocXaur(options?: DocumentOptions)
 
 #### Example
 
-```typescript
+```ts
 const doc = new DocXaur({
   title: "Sales Report Q4 2024",
   creator: "John Doe",
@@ -117,7 +117,7 @@ Adds a new section to the document.
 
 **Example:**
 
-```typescript
+```ts
 // Default A4 Portrait
 const section1 = doc.addSection();
 
@@ -147,7 +147,7 @@ Downloads the document to the user's computer.
 
 **Example:**
 
-```typescript
+```ts
 await doc.download("my-report.docx");
 ```
 
@@ -157,7 +157,7 @@ Returns the document as a Blob for custom handling.
 
 **Example:**
 
-```typescript
+```ts
 const blob = await doc.toBlob();
 // Upload to server, etc.
 ```
@@ -200,7 +200,7 @@ Adds a heading to the section.
 
 **Example:**
 
-```typescript
+```ts
 section.heading("Chapter 1: Introduction", 1);
 section.heading("Section 1.1", 2);
 section.heading("Subsection 1.1.1", 3, { color: "FF0000" });
@@ -229,7 +229,7 @@ Creates a new paragraph builder.
 
 **Example:**
 
-```typescript
+```ts
 section.paragraph({ align: "center", fontSize: 14 })
   .text("Hello ")
   .text("World", { bold: true, color: "FF0000" });
@@ -254,7 +254,7 @@ Adds an image from a URL.
 
 **Example:**
 
-```typescript
+```ts
 // From URL
 await section.image("https://example.com/photo.jpg", {
   width: "15cm",
@@ -298,7 +298,7 @@ Creates a table builder.
 
 **Example:**
 
-```typescript
+```ts
 const table = section.table({
   columns: [
     {
@@ -345,7 +345,7 @@ Adds line breaks.
 
 **Example:**
 
-```typescript
+```ts
 section.lineBreak(2); // Add 2 line breaks
 ```
 
@@ -359,7 +359,7 @@ Adds page breaks.
 
 **Example:**
 
-```typescript
+```ts
 section.pageBreak(); // Start new page
 ```
 
@@ -388,7 +388,7 @@ Adds text with optional inline styling.
 
 **Example:**
 
-```typescript
+```ts
 section.paragraph()
   .text("Normal text ")
   .text("bold text ", { bold: true })
@@ -401,7 +401,7 @@ Adds a tab character.
 
 **Example:**
 
-```typescript
+```ts
 section.paragraph()
   .text("Name:")
   .tab()
@@ -414,7 +414,7 @@ Adds line breaks within the paragraph.
 
 **Example:**
 
-```typescript
+```ts
 section.paragraph()
   .text("First line")
   .lineBreak()
@@ -429,7 +429,7 @@ Adds a page break within the paragraph.
 
 **Example:**
 
-```typescript
+```ts
 section.paragraph()
   .text("End of page 1")
   .pageBreak()
@@ -444,7 +444,7 @@ Conditionally applies operations.
 
 **Example:**
 
-```typescript
+```ts
 const showDate = true;
 const showTime = false;
 
@@ -471,14 +471,14 @@ Adds a row to the table. Each cell can have its own individual styling.
 
 **Simple usage (strings):**
 
-```typescript
+```ts
 // Simple text cells (uses column defaults for alignment)
 table.row("Cell 1", "Cell 2", "Cell 3");
 ```
 
 **Advanced usage (TableCellData objects):**
 
-```typescript
+```ts
 // Each cell with its own styling
 table.row(
   { text: "Name", bold: true, cellColor: "4472C4", fontColor: "FFFFFF" },
@@ -507,7 +507,7 @@ table.row(
 
 **Examples:**
 
-```typescript
+```ts
 // Header row with blue background and white text
 table.row(
   { text: "Name", bold: true, cellColor: "4472C4", fontColor: "FFFFFF" },
@@ -550,7 +550,7 @@ Conditionally applies operations to the table.
 
 **Example:**
 
-```typescript
+```ts
 const includeTotal = true;
 
 table
@@ -576,7 +576,7 @@ table
 
 ### Example 1: Sales Report with Styled Table
 
-```typescript
+```ts
 const doc = new DocXaur({
   title: "Sales Report Q4 2024",
   creator: "Sales Team",
@@ -647,7 +647,7 @@ await doc.download("sales-report-q4-2024.docx");
 
 ### Example 2: Invoice with Custom Cell Styling
 
-```typescript
+```ts
 const doc = new DocXaur({ title: "Invoice" });
 const section = doc.addSection();
 
@@ -738,7 +738,7 @@ await doc.download("invoice-2024-001.docx");
 
 ### Example 3: Product Comparison with Column Defaults
 
-```typescript
+```ts
 const doc = new DocXaur({ title: "Product Comparison" });
 const section = doc.addSection();
 
@@ -795,7 +795,7 @@ await doc.download("product-comparison.docx");
 
 ### Example 4: Complex Table with Rowspan/Colspan
 
-```typescript
+```ts
 const doc = new DocXaur({ title: "Complex Table" });
 const section = doc.addSection();
 
@@ -862,7 +862,7 @@ await doc.download("employee-schedule.docx");
 
 ### Example 5: Multi-font Report with Column Defaults
 
-```typescript
+```ts
 const doc = new DocXaur({ title: "Typography Showcase" });
 const section = doc.addSection();
 
@@ -964,7 +964,7 @@ await doc.download("typography-showcase.docx");
 
 ### 1. Always Use Fresh Islands
 
-```typescript
+```ts
 // ✅ CORRECT - Fresh Island
 // islands/MyDocumentGenerator.tsx
 import { DocXaur } from "jsr:@fytz/docxaur";
@@ -985,7 +985,7 @@ import { DocXaur } from "jsr:@fytz/docxaur";
 
 ### 2. Use Semantic Method Chaining
 
-```typescript
+```ts
 // Readable and maintainable
 section
   .heading("Chapter 1")
@@ -1006,13 +1006,13 @@ your-fresh-app/
     └── DocGenerator.tsx
 ```
 
-```typescript
+```ts
 await section.image("/images/logo.png");
 ```
 
 ### 4. Use Hex Colors Without
 
-```typescript
+```ts
 // ✅ CORRECT
 section.paragraph().text("Red text", { color: "FF0000" });
 table.row({ text: "Cell", cellColor: "E0E0E0", fontColor: "FF0000" });
@@ -1024,7 +1024,7 @@ table.row({ text: "Cell", cellColor: "#E0E0E0" });
 
 ### 5. Apply Styles at Cell Level
 
-```typescript
+```ts
 // ✅ CORRECT - Each cell has its own style
 table.row(
   { text: "Name", bold: true, cellColor: "4472C4", fontColor: "FFFFFF" },
@@ -1042,7 +1042,7 @@ table.row(
 
 ### 6. Handle Async Image Loading
 
-```typescript
+```ts
 // Wait for all images before download
 await section.image("/images/img1.png");
 await section.image("/images/img2.png");
@@ -1051,7 +1051,7 @@ await doc.download();
 
 ### 7. Use Column Defaults Wisely
 
-```typescript
+```ts
 // Set column defaults that apply to all cells in that column
 const table = section.table({
   columns: [
@@ -1095,7 +1095,7 @@ table.row(
 
 ### Meeting Minutes
 
-```typescript
+```ts
 const doc = new DocXaur({ title: "Meeting Minutes" });
 const section = doc.addSection();
 
@@ -1111,7 +1111,7 @@ section.paragraph().text("3. Next sprint planning");
 
 ### Certificate
 
-```typescript
+```ts
 const doc = new DocXaur({ title: "Certificate" });
 const section = doc.addSection();
 
@@ -1138,7 +1138,7 @@ section.paragraph({ align: "center", size: 16, bold: true })
 
 ### Product Catalog
 
-```typescript
+```ts
 const products = [
   { name: "Widget A", price: "$29.99", stock: "In Stock", color: "00AA00" },
   { name: "Widget B", price: "$39.99", stock: "Low Stock", color: "FF6600" },
@@ -1185,7 +1185,7 @@ await doc.download("catalog-2025.docx");
 
 ### Grade Report
 
-```typescript
+```ts
 const doc = new DocXaur({ title: "Grade Report" });
 const section = doc.addSection();
 
@@ -1280,7 +1280,7 @@ await doc.download("grade-report.docx");
 
 **Common mistakes:**
 
-```typescript
+```ts
 // ❌ WRONG - Using wrong property names
 table.row(
   { text: "Hello", size: 12 }, // Should be fontSize
@@ -1305,7 +1305,7 @@ table.row(
 - `rowspan`: Number of rows to span (2, 3, etc.)
 - `rowspan: 0`: Marks continuation of rowspan from above
 
-```typescript
+```ts
 // Header spanning 3 columns
 table.row(
   { text: "Title", colspan: 3, hAlign: "center" },
@@ -1398,7 +1398,7 @@ All column properties can be overridden at cell level, plus:
 
 ### Complete TableCellData Example
 
-```typescript
+```ts
 table.row(
   {
     // Required
@@ -1429,7 +1429,7 @@ table.row(
 
 ### Color Palette Examples
 
-```typescript
+```ts
 // Professional colors
 const colors = {
   // Blues
@@ -1466,7 +1466,7 @@ table.row(
 
 ### 1. Reuse Table Definitions
 
-```typescript
+```ts
 // Define reusable cell styles
 const headerStyle = {
   bold: true,
@@ -1493,7 +1493,7 @@ table2.row(
 
 ### 2. Batch Image Loading
 
-```typescript
+```ts
 // Load all images at once
 const section = doc.addSection();
 
@@ -1506,7 +1506,7 @@ await Promise.all([
 
 ### 3. Use Simple Strings When Possible
 
-```typescript
+```ts
 // Simple data doesn't need objects
 table.row("John", "25", "New York");
 
@@ -1526,7 +1526,7 @@ table.row(
 
 **Old way (deprecated):**
 
-```typescript
+```ts
 // ❌ Row options don't exist anymore
 table.row(
   { height: "1cm", vAlign: "top" },
@@ -1537,7 +1537,7 @@ table.row(
 
 **New way:**
 
-```typescript
+```ts
 // ✅ Apply options to individual cells
 table.row(
   { text: "Cell 1", height: "1cm", vAlign: "top" },
@@ -1557,7 +1557,7 @@ table.row(
 
 ### Dynamic Table Generation
 
-```typescript
+```ts
 const data = [
   { name: "Alice", score: 95, grade: "A" },
   { name: "Bob", score: 87, grade: "B" },
@@ -1597,7 +1597,7 @@ data.forEach((student) => {
 
 ### Conditional Cell Styling
 
-```typescript
+```ts
 const values = [100, -50, 200, -30, 150];
 
 table.row(
@@ -1640,7 +1640,7 @@ For issues and questions, please visit:
 
 ### Document Creation
 
-```typescript
+```ts
 const doc = new DocXaur({ title: "My Doc" });
 const section = doc.addSection();
 await doc.download("file.docx");
@@ -1648,7 +1648,7 @@ await doc.download("file.docx");
 
 ### Text Content
 
-```typescript
+```ts
 section.heading("Title", 1);
 section.paragraph().text("Hello").text("World", { bold: true });
 section.lineBreak();
@@ -1657,13 +1657,13 @@ section.pageBreak();
 
 ### Images
 
-```typescript
+```ts
 await section.image("/images/logo.png", { width: "5cm" });
 ```
 
 ### Tables
 
-```typescript
+```ts
 const table = section.table({
   columns: [
     { width: "5cm", align: "left" },
@@ -1681,7 +1681,7 @@ table.row("Simple text", { text: "Styled", fontSize: 12, bold: true });
 
 ### Common Cell Properties
 
-```typescript
+```ts
 {
   text: "Content",
   fontName: "Arial",

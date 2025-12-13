@@ -1,10 +1,14 @@
 /**
  * Image block.
- * @module
+ *
+ * Represents an image embedded into the document. The block produces the
+ * drawing markup (wp:inline ...) used by WordprocessingML. Image sizing can
+ * be provided via `width`/`height` in `ImageOptions`.
  */
 import { cmToEmu, parseImageSize } from "../core/utils.ts";
 import type { ImageOptions } from "../core/docxaur.ts";
-import { Element, Section } from "./section.ts";
+import { Element } from "./element.ts";
+import type { Section } from "./section.ts";
 
 export class Image extends Element {
   private static drawingCounter = 1;

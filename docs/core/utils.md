@@ -22,7 +22,7 @@ Utilities used across DocXaur:
 ## Example
 
 ```ts
-import { cmToEmu, escapeXML } from "jsr:@your-scope/docxaur/utils";
+import { cmToEmu, escapeXML } from "jsr:@fytz/docxaur";
 
 const widthEmu = cmToEmu(10); // -> for DrawingML extent
 const safeText = escapeXML('3 < 5 & "quotes"'); // -> XML-safe text
