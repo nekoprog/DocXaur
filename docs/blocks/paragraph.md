@@ -1,6 +1,7 @@
 # Paragraph
 
-Represents `<w:p>` with inline text runs and styles. Chain methods for readable composition.
+Represents `<w:p>` with inline text runs and styles. Chain methods for readable
+composition.
 
 ## Basic
 
@@ -37,5 +38,5 @@ section.paragraph().text("Name:").tab().text("Jane Doe");
 
 ```ts
 // Prefer explicit method calls
-section.paragraph().apply(p => p.text("Text")); // warns (deprecated)
+section.paragraph().apply((p) => p.text("Text")); // warns (deprecated)
 ```

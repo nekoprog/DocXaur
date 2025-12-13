@@ -3,6 +3,7 @@
 Utilities used across DocXaur:
 
 ## Units
+
 - `cmToTwips(cm)` → word twips
 - `cmToEmu(cm)` → OOXML EMU
 - `ptToHalfPoints(pt)` → Word half-points
@@ -10,10 +11,12 @@ Utilities used across DocXaur:
 - `parseImageSize("10cm" | "120px" | "1in")` → EMU
 
 ## XML
+
 - `escapeXML(text)` → safe XML text
 
 ## Images
-- `fetchImageAsBase64(url)` → `{ data, extension }`  
+
+- `fetchImageAsBase64(url)` → `{ data, extension }`\
   Use `https://…` or `"/images/…"` (Fresh static); throws on failures.
 
 ## Example

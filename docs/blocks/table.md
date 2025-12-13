@@ -7,7 +7,7 @@ Build `<w:tbl>` with column grid and cell-level styling.
 ```ts
 const table = section.table({
   columns: [
-    { width: "4cm", hAlign: "left",  bold: true },
+    { width: "4cm", hAlign: "left", bold: true },
     { width: "3cm", hAlign: "right", fontSize: 12 },
     { width: "3cm", hAlign: "center" },
   ],
@@ -43,8 +43,8 @@ table.row(
 
 ```ts
 table.row(
-  { text: "Item",  bold: true, cellColor: "4472C4", fontColor: "FFFFFF" },
-  { text: "Qty",   bold: true, cellColor: "4472C4", fontColor: "FFFFFF" },
+  { text: "Item", bold: true, cellColor: "4472C4", fontColor: "FFFFFF" },
+  { text: "Qty", bold: true, cellColor: "4472C4", fontColor: "FFFFFF" },
   { text: "Total", bold: true, cellColor: "4472C4", fontColor: "FFFFFF" },
 );
 ```
@@ -54,10 +54,12 @@ table.row(
 ```ts
 table.row(
   { text: "Group A", rowspan: 2, vAlign: "center", bold: true },
-  { text: "Mon" }, { text: "Tue" },
+  { text: "Mon" },
+  { text: "Tue" },
 );
 table.row(
   { text: "", rowspan: 0 }, // continuation
-  { text: "Wed" }, { text: "Thu" },
+  { text: "Wed" },
+  { text: "Thu" },
 );
 ```
