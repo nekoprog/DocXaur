@@ -1,29 +1,43 @@
+/**
+ * Image block.
+ * @module
+ */
+import { cmToEmu, parseImageSize } from "../core/utils.ts";
+import type { ImageOptions } from "../core/docxaur.ts";
+import { Element, Section } from "./section.ts";
 
-    /**
-     * Image block.
-     * @module
-     */
-    import { cmToEmu, parseImageSize } from "../core/utils.ts";
-    import type { ImageOptions } from "../core/docxaur.ts";
-    import { Section, Element } from "./section.ts";
+export class Image extends Element {
+  private static drawingCounter = 1;
 
-    export class Image extends Element {
-      private static drawingCounter = 1; static nextId(): number { return Image.drawingCounter++; }
-      constructor(private imageId: number, private section: Section, private options: ImageOptions = {}) { super(); }
+  static nextId(): number {
+    return Image.drawingCounter++;
+  }
 
-      toXML(): string {
-        const width  = this.options.width  ? parseImageSize(this.options.width)  : cmToEmu(10);
-        const height = this.options.height ? parseImageSize(this.options.height) : width;
-        const align  = this.options.align ?? "center";
-        const relId  = this.section._doc().getImageRelId(this.imageId);
-        const drawId = Image.nextId();
-        let xml = "  <w:p>
-";
-        if (align !== "left") { xml += "    <w:pPr>
-"; xml += `      <w:jc w:val="${align}"/>
-`; xml += "    </w:pPr>
-"; }
-        xml += `    <w:r>
+  constructor(
+    private imageId: number,
+    private section: Section,
+    private options: ImageOptions = {},
+  ) {
+    super();
+  }
+
+  toXML(): string {
+    const width = this.options.width
+      ? parseImageSize(this.options.width)
+      : cmToEmu(10);
+    const height = this.options.height
+      ? parseImageSize(this.options.height)
+      : width;
+    const align = this.options.align ?? "center";
+    const relId = this.section._doc().getImageRelId(this.imageId);
+    const drawId = Image.nextId();
+    let xml = "  <w:p>\n";
+    if (align !== "left") {
+      xml += "    <w:pPr>\n";
+      xml += `      <w:jc w:val="${align}"/>\n`;
+      xml += "    </w:pPr>\n";
+    }
+    xml += `    <w:r>
       <w:drawing>
         <wp:inline distT="0" distB="0" distL="0" distR="0">
           <wp:extent cx="${width}" cy="${height}"/>
@@ -53,6 +67,7 @@
         </wp:inline>
       </w:drawing>
     </w:r>
-  </w:p>`; return xml;
-      }
-    }
+  </w:p>`;
+    return xml;
+  }
+}

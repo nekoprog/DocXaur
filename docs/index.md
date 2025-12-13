@@ -1,8 +1,9 @@
 # DocXaur Documentation
 
-Welcome to DocXaur’s extended documentation. This site complements the API docs that JSR generates from our JSDoc comments.
+Welcome to DocXaur’s extended documentation. This site complements the API docs
+that JSR generates from our JSDoc comments.
 
-- **Core**: Packaging, relationships, and helpers  
+- **Core**: Packaging, relationships, and helpers
 - **Blocks**: Paragraphs, Images, Tables (future: headers, footers, bookmarks)
 
 ## Quick Links

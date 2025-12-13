@@ -2,6 +2,7 @@
   "name": "@fytz/docxaur",
   "version": "0.2.0",
   "license": "Apache 2.0",
+  "lock": false,
   "imports": {
     "@zip-js/zip-js": "jsr:@zip-js/zip-js@^2.8.8",
     "@std/media-types": "jsr:@std/media-types@^1.1.0"

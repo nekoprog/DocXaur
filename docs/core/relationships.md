@@ -1,6 +1,8 @@
 # Relationships (Images)
 
-DocXaur ensures every `<a:blip r:embed="rIdX">` in `word/document.xml` has a matching `<Relationship … Type="…/image">` entry in `word/_rels/document.xml.rels`, targeting `media/image{id}.{ext}`.
+DocXaur ensures every `<a:blip r:embed="rIdX">` in `word/document.xml` has a
+matching `<Relationship … Type="…/image">` entry in
+`word/_rels/document.xml.rels`, targeting `media/image{id}.{ext}`.
 
 ## What the Helper Does
 
@@ -10,10 +12,11 @@ DocXaur ensures every `<a:blip r:embed="rIdX">` in `word/document.xml` has a mat
 
 ## When It Runs
 
-DocXaur generates `word/document.xml` **first** (tables register images during build), then:
+DocXaur generates `word/document.xml` **first** (tables register images during
+build), then:
 
-1. Produces raw relationships XML  
-2. Applies the guard (`ensureImageRelationships`)  
+1. Produces raw relationships XML
+2. Applies the guard (`ensureImageRelationships`)
 3. Writes the fixed `.rels` into the ZIP
 
 This guarantees Word can resolve all images.

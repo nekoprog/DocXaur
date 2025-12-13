@@ -1,4 +1,3 @@
-
 /**
  * DocXaur public entry (blocks).
  * @module
