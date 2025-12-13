@@ -192,6 +192,8 @@ export class Table extends Element {
   private options: TableOptions;
   private isBuilt = false;
 
+  public _buildPromise?: Promise<void>;
+
   constructor(options: TableOptions) {
     super();
     this.options = options;

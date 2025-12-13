@@ -18,6 +18,8 @@ import { Image } from "./image.ts";
 import { Table } from "./table.ts";
 import { Element } from "./element.ts";
 
+type TableBridge = Element & { _table?: Table };
+
 export class Section {
   private elements: Element[] = [];
   private options: Required<SectionOptions>;
@@ -51,6 +53,12 @@ export class Section {
   async toXMLAsync(): Promise<string> {
     let xml = "";
     for (const el of this.elements) {
+      const bridge = el as TableBridge;
+      if (bridge._table) {
+        if (bridge._table._buildPromise) {
+          await bridge._table._buildPromise;
+        }
+      }
       xml += el.toXML() + "\n";
     }
     return xml;
@@ -102,15 +110,16 @@ export class Section {
 
   table(options: TableOptions): Table {
     const t = new Table(options);
-    void (async () => {
-      await (t as any).buildRows(this);
-    })();
+    t._buildPromise = t.buildRows(this);
+
     const bridgeSection = this;
-    const bridge = new (class extends Element {
+    const bridge: TableBridge = new (class extends Element {
       toXML(): string {
-        return (t as any)._toXMLWithSection(bridgeSection);
+        return t._toXMLWithSection(bridgeSection);
       }
     })();
+    bridge._table = t;
+
     this._push(bridge);
     return t;
   }
