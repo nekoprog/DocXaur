@@ -17,6 +17,20 @@ import { Paragraph } from "./paragraph.ts";
 import { Image } from "./image.ts";
 import { Table } from "./table.ts";
 import { Element } from "./element.ts";
+import {
+  createShapeRun,
+  SHAPE_CIRCLE,
+  SHAPE_DIAMOND,
+  SHAPE_HEART,
+  SHAPE_HEXAGON,
+  SHAPE_PENTAGON,
+  SHAPE_RECT,
+  SHAPE_ROUNDED_RECT,
+  SHAPE_STAR_5,
+  SHAPE_TRIANGLE,
+  type ShapeOptions,
+  type ShapeType,
+} from "./shapes.ts";
 
 type TableBridge = Element & { _table?: Table };
 
@@ -107,6 +121,137 @@ export class Section {
     const id = await this._doc().registerImage(url);
     this._push(new Image(id, this, options));
     return this;
+  }
+
+  /**
+   * Inserts a rectangle shape.
+   *
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {Paragraph}
+   */
+  rectangle(options?: ShapeOptions): Paragraph {
+    const p = new Paragraph();
+    p.rectangle(options);
+    this._push(p);
+    return p;
+  }
+
+  /**
+   * Inserts a rounded rectangle shape.
+   *
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {Paragraph}
+   */
+  roundedRectangle(options?: ShapeOptions): Paragraph {
+    const p = new Paragraph();
+    p.roundedRectangle(options);
+    this._push(p);
+    return p;
+  }
+
+  /**
+   * Inserts a circle or ellipse shape.
+   *
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {Paragraph}
+   */
+  circle(options?: ShapeOptions): Paragraph {
+    const p = new Paragraph();
+    p.circle(options);
+    this._push(p);
+    return p;
+  }
+
+  /**
+   * Inserts a diamond shape.
+   *
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {Paragraph}
+   */
+  diamond(options?: ShapeOptions): Paragraph {
+    const p = new Paragraph();
+    p.diamond(options);
+    this._push(p);
+    return p;
+  }
+
+  /**
+   * Inserts a triangle shape.
+   *
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {Paragraph}
+   */
+  triangle(options?: ShapeOptions): Paragraph {
+    const p = new Paragraph();
+    p.triangle(options);
+    this._push(p);
+    return p;
+  }
+
+  /**
+   * Inserts a pentagon shape.
+   *
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {Paragraph}
+   */
+  pentagon(options?: ShapeOptions): Paragraph {
+    const p = new Paragraph();
+    p.pentagon(options);
+    this._push(p);
+    return p;
+  }
+
+  /**
+   * Inserts a hexagon shape.
+   *
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {Paragraph}
+   */
+  hexagon(options?: ShapeOptions): Paragraph {
+    const p = new Paragraph();
+    p.hexagon(options);
+    this._push(p);
+    return p;
+  }
+
+  /**
+   * Inserts a five-point star shape.
+   *
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {Paragraph}
+   */
+  star5(options?: ShapeOptions): Paragraph {
+    const p = new Paragraph();
+    p.star5(options);
+    this._push(p);
+    return p;
+  }
+
+  /**
+   * Inserts a heart shape.
+   *
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {Paragraph}
+   */
+  heart(options?: ShapeOptions): Paragraph {
+    const p = new Paragraph();
+    p.heart(options);
+    this._push(p);
+    return p;
+  }
+
+  /**
+   * Inserts a generic shape by preset.
+   *
+   * @param {ShapeType} shapeType - Shape preset identifier
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {Paragraph}
+   */
+  shape(shapeType: ShapeType, options?: ShapeOptions): Paragraph {
+    const p = new Paragraph();
+    p.shape(shapeType, options);
+    this._push(p);
+    return p;
   }
 
   table(options: TableOptions): Table {

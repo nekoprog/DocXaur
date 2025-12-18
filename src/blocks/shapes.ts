@@ -2,7 +2,7 @@
  * Shape block implementation with DrawingML support.
  *
  * Provides geometric shape presets and configuration for inline insertion
- * into paragraphs.
+ * into paragraphs, sections, and tables.
  *
  * @module
  */
@@ -112,15 +112,29 @@ export const SHAPE_HEART: ShapeType = {
 };
 
 /**
+ * Shape gradient stop configuration.
+ *
+ * @typedef {Object} GradientStop
+ * @property {number} position - Position in gradient (0-100000)
+ * @property {string} color - Stop color (hex without #)
+ */
+export interface GradientStop {
+  position: number;
+  color: string;
+}
+
+/**
  * Shape fill configuration.
  *
  * @typedef {Object} ShapeFill
- * @property {string} [color] - Fill color (hex without #)
- * @property {number} [transparency] - Transparency level (0-100000)
+ * @property {string} [color] - Solid fill color (hex without #)
+ * @property {GradientStop[]} [gradient] - Gradient fill stops
+ * @property {string} [gradientAngle] - Gradient angle in degrees
  */
 export interface ShapeFill {
   color?: string;
-  transparency?: number;
+  gradient?: GradientStop[];
+  gradientAngle?: string;
 }
 
 /**
@@ -150,19 +164,47 @@ export interface ShapeSize {
 }
 
 /**
- * Shape options for paragraph insertion.
+ * Text box body configuration.
+ *
+ * @typedef {Object} TextBoxBody
+ * @property {string} text - Text content
+ * @property {boolean} [bold] - Bold formatting
+ * @property {boolean} [italic] - Italic formatting
+ * @property {boolean} [underline] - Underline formatting
+ * @property {number} [fontSize] - Font size in points
+ * @property {string} [fontColor] - Text color (hex without #)
+ * @property {string} [fontName] - Font family
+ * @property {string} [align] - Text alignment ("left" | "center" | "right" | "justify")
+ */
+export interface TextBoxBody {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  fontSize?: number;
+  fontColor?: string;
+  fontName?: string;
+  align?: string;
+}
+
+/**
+ * Shape options for insertion.
  *
  * @typedef {Object} ShapeOptions
  * @property {ShapeSize} [size] - Shape dimensions
  * @property {ShapeFill} [fill] - Fill properties
  * @property {ShapeLine} [line] - Border/line properties
  * @property {string} [align] - Horizontal alignment ("left" | "center" | "right")
+ * @property {"anchor" | "inline"} [position] - Shape positioning mode (default: "anchor")
+ * @property {TextBoxBody} [textBox] - Text box body and styling
  */
 export interface ShapeOptions {
   size?: ShapeSize;
   fill?: ShapeFill;
   line?: ShapeLine;
   align?: "left" | "center" | "right";
+  position?: "anchor" | "inline";
+  textBox?: TextBoxBody;
 }
 
 let shapeCounter = 1;
@@ -202,18 +244,29 @@ function parseShapeDim(dim: string): number {
  *
  * @private
  * @param {ShapeFill} [fill] - Fill configuration
- * @returns {string} OOXML solidFill element
+ * @returns {string} OOXML solidFill or gradient element
  */
 function buildShapeFillXML(fill?: ShapeFill): string {
-  if (!fill || (!fill.color && fill.transparency === undefined)) {
+  if (!fill || (!fill.color && !fill.gradient)) {
     return '        <a:solidFill><a:srgbClr val="000000"/></a:solidFill>\n';
   }
 
-  const color = fill.color || "000000";
-  if (fill.transparency && fill.transparency > 0) {
-    return `        <a:solidFill><a:srgbClr val="${color}"><a:alpha val="${fill.transparency}"/></a:srgbClr></a:solidFill>\n`;
+  if (fill.gradient && fill.gradient.length > 0) {
+    let xml = "        <a:gradFill>\n";
+    xml += "          <a:gsLst>\n";
+    for (const stop of fill.gradient) {
+      xml +=
+        `            <a:gs pos="${stop.position}"><a:srgbClr val="${stop.color}"/></a:gs>\n`;
+    }
+    xml += "          </a:gsLst>\n";
+    xml += `          <a:lin ang="${
+      parseInt(fill.gradientAngle || "0") * 60000
+    }" scaled="1"/>\n`;
+    xml += "        </a:gradFill>\n";
+    return xml;
   }
 
+  const color = fill.color || "000000";
   return `        <a:solidFill><a:srgbClr val="${color}"/></a:solidFill>\n`;
 }
 
@@ -237,14 +290,60 @@ function buildShapeLineXML(line?: ShapeLine): string {
 }
 
 /**
+ * Generates OOXML for text box body content.
+ *
+ * @private
+ * @param {TextBoxBody} textBox - Text box configuration
+ * @returns {string} OOXML text body element
+ */
+function buildTextBoxXML(textBox: TextBoxBody): string {
+  const align = textBox.align || "left";
+  const jc = align === "justify" ? "both" : align;
+
+  let xml = "              <wps:txbx>\n";
+  xml += "                <w:txbxContent>\n";
+  xml += "                  <w:p>\n";
+  xml += "                    <w:pPr>\n";
+  if (align !== "left") {
+    xml += `                      <w:jc w:val="${jc}"/>\n`;
+  }
+  xml += "                    </w:pPr>\n";
+  xml += "                    <w:r>\n";
+  xml += "                      <w:rPr>\n";
+  if (textBox.bold) xml += "                        <w:b/>\n";
+  if (textBox.italic) xml += "                        <w:i/>\n";
+  if (textBox.underline) {
+    xml += '                        <w:u w:val="single"/>\n';
+  }
+  if (textBox.fontSize) {
+    xml += `                        <w:sz w:val="${textBox.fontSize * 2}"/>\n`;
+  }
+  if (textBox.fontColor) {
+    xml += `                        <w:color w:val="${textBox.fontColor}"/>\n`;
+  }
+  if (textBox.fontName) {
+    xml +=
+      `                        <w:rFonts w:ascii="${textBox.fontName}" w:hAnsi="${textBox.fontName}"/>\n`;
+  }
+  xml += "                      </w:rPr>\n";
+  xml += `                      <w:t>${textBox.text}</w:t>\n`;
+  xml += "                    </w:r>\n";
+  xml += "                  </w:p>\n";
+  xml += "                </w:txbxContent>\n";
+  xml += "              </wps:txbx>\n";
+  return xml;
+}
+
+/**
  * Generates OOXML DrawingML shape element.
  *
- * Produces a complete anchor-positioned shape element with fill and line properties.
+ * Produces a complete shape element with fill, line, and optional text box.
+ * Supports both anchor-positioned (floating) and inline shapes.
  *
  * @param {ShapeType} shapeType - Shape preset
  * @param {number} width - Width in EMU
  * @param {number} height - Height in EMU
- * @param {ShapeOptions} [options] - Shape styling
+ * @param {ShapeOptions} [options] - Shape styling and positioning
  * @returns {string} OOXML shape element
  */
 export function buildShapeXML(
@@ -255,8 +354,36 @@ export function buildShapeXML(
 ): string {
   const fillXML = buildShapeFillXML(options?.fill);
   const lineXML = buildShapeLineXML(options?.line);
+  const textBoxXML = options?.textBox ? buildTextBoxXML(options.textBox) : "";
   const shapeId = shapeCounter++;
   const align = options?.align || "center";
+  const position = options?.position || "anchor";
+
+  if (position === "inline") {
+    return `    <w:r>
+      <w:drawing>
+        <wp:inline distT="0" distB="0" distL="0" distR="0">
+          <wp:extent cx="${width}" cy="${height}"/>
+          <wp:effectExtent l="0" t="0" r="0" b="0"/>
+          <wp:docPr id="${shapeId}" name="Shape ${shapeId}"/>
+          <wp:cNvGraphicFramePr/>
+          <a:graphic>
+            <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/shape">
+              <wps:wsp>
+                <wps:cNvSpPr/>
+                <wps:spPr>
+                  <a:xfrm><a:off x="0" y="0"/><a:ext cx="${width}" cy="${height}"/></a:xfrm>
+                  <a:prstGeom prst="${shapeType.preset}"><a:avLst/></a:prstGeom>
+${fillXML}${lineXML}                </wps:spPr>
+${textBoxXML}                <wps:bodyPr rot="0" vert="horz" anchor="ctr" anchorCtr="0" rtlCol="0"/>
+              </wps:wsp>
+            </a:graphicData>
+          </a:graphic>
+        </wp:inline>
+      </w:drawing>
+    </w:r>
+`;
+  }
 
   return `    <w:r>
       <w:drawing>
@@ -277,7 +404,7 @@ export function buildShapeXML(
                   <a:xfrm><a:off x="0" y="0"/><a:ext cx="${width}" cy="${height}"/></a:xfrm>
                   <a:prstGeom prst="${shapeType.preset}"><a:avLst/></a:prstGeom>
 ${fillXML}${lineXML}                </wps:spPr>
-                <wps:bodyPr rot="0" vert="horz" anchor="ctr" anchorCtr="0" rtlCol="0"/>
+${textBoxXML}                <wps:bodyPr rot="0" vert="horz" anchor="ctr" anchorCtr="0" rtlCol="0"/>
               </wps:wsp>
             </a:graphicData>
           </a:graphic>
