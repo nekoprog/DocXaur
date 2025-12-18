@@ -188,6 +188,14 @@ export class DocXaur {
       new TextReader(this.generateContentTypes()),
     );
     await zipWriter.add("_rels/.rels", new TextReader(this.generateRootRels()));
+    await zipWriter.add(
+      "docProps/core.xml",
+      new TextReader(this.generateCoreProperties()),
+    );
+    await zipWriter.add(
+      "docProps/app.xml",
+      new TextReader(this.generateAppProperties()),
+    );
 
     const docXml = await this.generateDocumentAsync();
 
@@ -344,6 +352,45 @@ export class DocXaur {
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:zoom w:percent="100"/>
+  <w:compat>
+    <w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>
+  </w:compat>
 </w:settings>`;
+  }
+
+  private generateCoreProperties(): string {
+    const now = new Date().toISOString();
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dc:title>${this.escapeXml(this.options.title ?? "")}</dc:title>
+  <dc:creator>${this.escapeXml(this.options.creator ?? "")}</dc:creator>
+  <dc:description>${
+      this.escapeXml(this.options.description ?? "")
+    }</dc:description>
+  <dc:subject>${this.escapeXml(this.options.subject ?? "")}</dc:subject>
+  <cp:keywords xmlns:cp="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties">${
+      this.escapeXml(this.options.keywords ?? "")
+    }</cp:keywords>
+  <dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created>
+  <dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified>
+</Properties>`;
+  }
+
+  private generateAppProperties(): string {
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+  <TotalTime>0</TotalTime>
+  <Application>DocXaur</Application>
+  <AppVersion>1.0</AppVersion>
+</Properties>`;
+  }
+
+  private escapeXml(text: string): string {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
   }
 }
