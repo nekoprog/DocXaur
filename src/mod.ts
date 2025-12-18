@@ -19,5 +19,6 @@ export * from "./core/utils.ts";
 
 export * from "./blocks/section.ts";
 export * from "./blocks/paragraph.ts";
+export * from "./blocks/shapes.ts";
 export * from "./blocks/image.ts";
 export * from "./blocks/table.ts";

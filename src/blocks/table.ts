@@ -26,6 +26,46 @@ import type { Section } from "./section.ts";
 import { Image } from "./image.ts";
 
 /**
+ * Represents a line break marker within cell content.
+ *
+ * @typedef {Object} LineBreak
+ * @private
+ */
+class LineBreak {
+  constructor(public count: number = 1) {}
+}
+
+/**
+ * Represents a page break marker within cell content.
+ *
+ * @typedef {Object} PageBreak
+ * @private
+ */
+class PageBreak {
+  constructor(public count: number = 1) {}
+}
+
+/**
+ * Creates a line break marker for use in table cell runs.
+ *
+ * @param {number} [count] - Number of line breaks (default: 1)
+ * @returns {LineBreak} Line break marker
+ */
+export function lineBreak(count: number = 1): LineBreak {
+  return new LineBreak(count);
+}
+
+/**
+ * Creates a page break marker for use in table cell runs.
+ *
+ * @param {number} [count] - Number of page breaks (default: 1)
+ * @returns {PageBreak} Page break marker
+ */
+export function pageBreak(count: number = 1): PageBreak {
+  return new PageBreak(count);
+}
+
+/**
  * Style properties for a text run within a cell.
  *
  * @typedef {Object} TextRunStyle
@@ -48,23 +88,34 @@ interface TextRunStyle {
 }
 
 /**
+ * Table cell run segment — text, line break, or page break.
+ *
+ * @typedef {Object} CellRunSegment
+ */
+type CellRunSegment = TextRunStyle | LineBreak | PageBreak;
+
+/**
  * Table cell data with support for rich text runs and breaks.
  *
  * Extends base TableCellData to provide multiple formatted text segments,
  * line and page break support, and per-cell font formatting that overrides
  * column defaults.
  *
+ * When using `runs` for multiple formatted text segments, alignment can be
+ * controlled via `hAlign` and `vAlign` properties on the cell data object,
+ * or inherited from column defaults if not specified.
+ *
  * @typedef {Object} EnhancedTableCellData
  * @property {string} [text] - Single text run (used if runs not provided)
- * @property {TextRunStyle[]} [runs] - Array of formatted text segments
+ * @property {(TextRunStyle | LineBreak | PageBreak)[]} [runs] - Array of formatted text segments, line breaks, and page breaks
  * @property {string} [fontName] - Font family (overrides column default)
  * @property {number} [fontSize] - Font size in points (overrides column default)
  * @property {string} [fontColor] - Font color hex (overrides column default)
  * @property {boolean} [bold] - Bold formatting (overrides column default)
  * @property {boolean} [italic] - Italic formatting (overrides column default)
  * @property {boolean} [underline] - Underline formatting (overrides column default)
- * @property {string} [hAlign] - Horizontal alignment (overrides column default)
- * @property {string} [vAlign] - Vertical alignment (overrides column default)
+ * @property {string} [hAlign] - Horizontal alignment: "left" | "center" | "right" | "justify" (overrides column default)
+ * @property {string} [vAlign] - Vertical alignment: "top" | "center" | "bottom" (overrides column default)
  * @property {string} [cellColor] - Cell background color hex
  * @property {number} [colspan] - Column span count
  * @property {number} [rowspan] - Row span count (0 for continuation)
@@ -75,7 +126,7 @@ interface TextRunStyle {
  * @property {string} [marginLeft] - Left margin
  */
 export interface EnhancedTableCellData extends TableCellData {
-  runs?: TextRunStyle[];
+  runs?: CellRunSegment[];
 }
 
 /**
@@ -112,7 +163,7 @@ class TableCellRun {
   /**
    * Creates a new text run.
    *
-   * @param {string} text - Run text content or special marker
+   * @param {string} text - Run text content
    * @param {Object} [style] - Run styling
    * @param {boolean} [style.bold] - Bold formatting
    * @param {boolean} [style.italic] - Italic formatting
@@ -296,20 +347,24 @@ class TableCell {
     const runs: TableCellRun[] = [];
 
     if (this.data.runs && this.data.runs.length > 0) {
-      for (const run of this.data.runs) {
-        if (run.text === "\n") {
-          runs.push(new TableCellRun("\n"));
-        } else if (run.text === "[PAGE_BREAK]") {
-          runs.push(new TableCellRun("[PAGE_BREAK]"));
+      for (const segment of this.data.runs) {
+        if (segment instanceof LineBreak) {
+          for (let i = 0; i < segment.count; i++) {
+            runs.push(new TableCellRun("\n"));
+          }
+        } else if (segment instanceof PageBreak) {
+          for (let i = 0; i < segment.count; i++) {
+            runs.push(new TableCellRun("[PAGE_BREAK]"));
+          }
         } else {
           runs.push(
-            new TableCellRun(run.text, {
-              bold: run.bold,
-              italic: run.italic,
-              underline: run.underline,
-              fontSize: run.fontSize,
-              fontColor: run.fontColor,
-              fontName: run.fontName,
+            new TableCellRun((segment as TextRunStyle).text, {
+              bold: (segment as TextRunStyle).bold,
+              italic: (segment as TextRunStyle).italic,
+              underline: (segment as TextRunStyle).underline,
+              fontSize: (segment as TextRunStyle).fontSize,
+              fontColor: (segment as TextRunStyle).fontColor,
+              fontName: (segment as TextRunStyle).fontName,
             }),
           );
         }
