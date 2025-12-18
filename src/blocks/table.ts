@@ -130,6 +130,18 @@ export interface EnhancedTableCellData extends TableCellData {
 }
 
 /**
+ * Row-level options for header and repeat settings.
+ *
+ * @typedef {Object} TableRowOptions
+ * @property {boolean} [header] - Mark row as table header
+ * @property {boolean} [repeat] - Repeat header on page breaks (default: false)
+ */
+interface TableRowOptions {
+  header?: boolean;
+  repeat?: boolean;
+}
+
+/**
  * Parses width specification to OOXML table cell width value.
  *
  * Handles both percentage-based widths (e.g., "28.7%") and fixed widths
@@ -232,13 +244,22 @@ class TableCellRun {
  */
 class TableRow {
   private cells: TableCell[] = [];
+  private isHeader: boolean;
+  private repeatHeader: boolean;
 
   /**
    * Creates a new table row.
    *
    * @param {TableOptions} tableOptions - Parent table options
+   * @param {TableRowOptions} [options] - Row-level options for header and repeat
    */
-  constructor(private tableOptions: TableOptions) {}
+  constructor(
+    private tableOptions: TableOptions,
+    options?: TableRowOptions,
+  ) {
+    this.isHeader = options?.header ?? false;
+    this.repeatHeader = options?.repeat ?? false;
+  }
 
   /**
    * Adds a cell to this row.
@@ -268,21 +289,26 @@ class TableRow {
    * Generates OOXML for this table row.
    *
    * Produces a `<w:tr>` element with row properties and cell elements.
+   * Includes `<w:tblHeader/>` when row is marked as header with repeat enabled.
    *
    * @param {Section} section - Parent section context
    * @returns {string} WordprocessingML table row element
    */
   toXML(section: Section): string {
     let xml = "  <w:tr>\n";
+    xml += "    <w:trPr>\n";
+
+    if (this.isHeader && this.repeatHeader) {
+      xml += "      <w:tblHeader/>\n";
+    }
+
     let maxHeight = 170;
     for (const cell of this.cells) {
       const h = cell.getHeight();
       if (h > maxHeight) maxHeight = h;
     }
-    xml += `    <w:trPr>
-       <w:trHeight w:val="${maxHeight}" w:hRule="atLeast"/>
-     </w:trPr>
- `;
+    xml += `      <w:trHeight w:val="${maxHeight}" w:hRule="atLeast"/>\n`;
+    xml += "    </w:trPr>\n";
     for (let i = 0; i < this.cells.length; i++) {
       xml += this.cells[i].toXML(i, this.tableOptions, section);
     }
@@ -566,7 +592,10 @@ class TableCell {
  * properties that override column defaults.
  */
 export class Table extends Element {
-  private rowDefs: Array<(string | EnhancedTableCellData)[]> = [];
+  private rowDefs: Array<{
+    cells: (string | EnhancedTableCellData)[];
+    options?: TableRowOptions;
+  }> = [];
   private rows: TableRow[] = [];
   private options: TableOptions;
   private isBuilt = false;
@@ -599,11 +628,30 @@ export class Table extends Element {
    * Rows can contain simple string cells or `EnhancedTableCellData` objects
    * with rich formatting, multiple runs, and line/page breaks.
    *
-   * @param {...(string | EnhancedTableCellData)[]} cells - Row cells
+   * First parameter can be row options object with header and repeat flags,
+   * followed by cell content. If options object is omitted, all arguments
+   * are treated as cell content.
+   *
+   * @param {...(string | EnhancedTableCellData | TableRowOptions)[]} args - Row options object optionally followed by cell data
    * @returns {this}
    */
-  row(...cells: (string | EnhancedTableCellData)[]): this {
-    this.rowDefs.push(cells);
+  row(...args: (string | EnhancedTableCellData | TableRowOptions)[]): this {
+    let options: TableRowOptions | undefined;
+    let cells: (string | EnhancedTableCellData)[] = [];
+
+    if (
+      args.length > 0 &&
+      typeof args[0] === "object" &&
+      !Array.isArray(args[0]) &&
+      (("header" in args[0]) || ("repeat" in args[0]))
+    ) {
+      options = args[0] as TableRowOptions;
+      cells = args.slice(1) as (string | EnhancedTableCellData)[];
+    } else {
+      cells = args as (string | EnhancedTableCellData)[];
+    }
+
+    this.rowDefs.push({ cells, options });
     return this;
   }
 
@@ -636,9 +684,9 @@ export class Table extends Element {
   async buildRows(section: Section): Promise<void> {
     if (this.isBuilt) return;
     this.isBuilt = true;
-    for (const defs of this.rowDefs) {
-      const row = new TableRow(this.options);
-      defs.forEach((cell, i) => {
+    for (const rowDef of this.rowDefs) {
+      const row = new TableRow(this.options, rowDef.options);
+      rowDef.cells.forEach((cell, i) => {
         const colOptions = this.options.columns[i];
         if (typeof cell === "string") {
           row.cell({
