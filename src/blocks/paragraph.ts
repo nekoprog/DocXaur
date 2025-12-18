@@ -3,15 +3,6 @@
  *
  * Use an instance to accumulate runs (text, breaks, tabs, page breaks) and
  * then call `toXML()` to get the WordprocessingML fragment for the paragraph.
- *
- * Example:
- *   section.paragraph().text("Hello").text(" world", { bold: true });
- */
-/**
- * Paragraph block with shape support.
- *
- * Integration of shape methods into existing Paragraph class.
- * File: src/blocks/paragraph.ts (modifications)
  */
 
 import { escapeXML, ptToHalfPoints } from "../core/utils.ts";
