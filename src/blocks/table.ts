@@ -1,6 +1,6 @@
 /**
  * Table block implementation with rich text formatting, percentage-based widths,
- * and cell-level styling.
+ * cell-level styling, and shape support.
  *
  * Construct tables by defining columns in `TableOptions` and adding rows via
  * `.row(...)`. Use `section.table(options)` to obtain a `Table` tied to a
@@ -24,25 +24,34 @@ import type {
 import { Element } from "./element.ts";
 import type { Section } from "./section.ts";
 import { Image } from "./image.ts";
+import {
+  createShapeRun,
+  SHAPE_CIRCLE,
+  SHAPE_DIAMOND,
+  SHAPE_HEART,
+  SHAPE_HEXAGON,
+  SHAPE_PENTAGON,
+  SHAPE_RECT,
+  SHAPE_ROUNDED_RECT,
+  SHAPE_STAR_5,
+  SHAPE_TRIANGLE,
+  type ShapeOptions,
+  type ShapeType,
+} from "./shapes.ts";
 
-/**
- * Represents a line break marker within cell content.
- *
- * @typedef {Object} LineBreak
- * @private
- */
 class LineBreak {
   constructor(public count: number = 1) {}
 }
 
-/**
- * Represents a page break marker within cell content.
- *
- * @typedef {Object} PageBreak
- * @private
- */
 class PageBreak {
   constructor(public count: number = 1) {}
+}
+
+class ShapeMarker {
+  constructor(
+    public shapeType: ShapeType,
+    public options?: ShapeOptions,
+  ) {}
 }
 
 /**
@@ -66,17 +75,19 @@ export function pageBreak(count: number = 1): PageBreak {
 }
 
 /**
- * Style properties for a text run within a cell.
+ * Creates a shape marker for use in table cell runs.
  *
- * @typedef {Object} TextRunStyle
- * @property {string} text - Run text content
- * @property {boolean} [bold] - Bold formatting
- * @property {boolean} [italic] - Italic formatting
- * @property {boolean} [underline] - Underline formatting
- * @property {number} [fontSize] - Font size in points
- * @property {string} [fontColor] - Font color (hex without #)
- * @property {string} [fontName] - Font family name
+ * @param {ShapeType} shapeType - Shape preset identifier
+ * @param {ShapeOptions} [options] - Shape configuration
+ * @returns {ShapeMarker} Shape marker
  */
+export function shape(
+  shapeType: ShapeType,
+  options?: ShapeOptions,
+): ShapeMarker {
+  return new ShapeMarker(shapeType, options);
+}
+
 interface TextRunStyle {
   text: string;
   bold?: boolean;
@@ -87,19 +98,14 @@ interface TextRunStyle {
   fontName?: string;
 }
 
-/**
- * Table cell run segment — text, line break, or page break.
- *
- * @typedef {Object} CellRunSegment
- */
-type CellRunSegment = TextRunStyle | LineBreak | PageBreak;
+type CellRunSegment = TextRunStyle | LineBreak | PageBreak | ShapeMarker;
 
 /**
- * Table cell data with support for rich text runs and breaks.
+ * Table cell data with support for rich text runs, breaks, and shapes.
  *
  * Extends base TableCellData to provide multiple formatted text segments,
- * line and page break support, and per-cell font formatting that overrides
- * column defaults.
+ * line and page break support, shape insertion, and per-cell font formatting
+ * that overrides column defaults.
  *
  * When using `runs` for multiple formatted text segments, alignment can be
  * controlled via `hAlign` and `vAlign` properties on the cell data object,
@@ -107,7 +113,7 @@ type CellRunSegment = TextRunStyle | LineBreak | PageBreak;
  *
  * @typedef {Object} EnhancedTableCellData
  * @property {string} [text] - Single text run (used if runs not provided)
- * @property {(TextRunStyle | LineBreak | PageBreak)[]} [runs] - Array of formatted text segments, line breaks, and page breaks
+ * @property {(TextRunStyle | LineBreak | PageBreak | ShapeMarker)[]} [runs] - Array of formatted text segments, line breaks, page breaks, and shapes
  * @property {string} [fontName] - Font family (overrides column default)
  * @property {number} [fontSize] - Font size in points (overrides column default)
  * @property {string} [fontColor] - Font color hex (overrides column default)
@@ -129,31 +135,11 @@ export interface EnhancedTableCellData extends TableCellData {
   runs?: CellRunSegment[];
 }
 
-/**
- * Row-level options for header and repeat settings.
- *
- * @typedef {Object} TableRowOptions
- * @property {boolean} [header] - Mark row as table header
- * @property {boolean} [repeat] - Repeat header on page breaks (default: false)
- */
 interface TableRowOptions {
   header?: boolean;
   repeat?: boolean;
 }
 
-/**
- * Parses width specification to OOXML table cell width value.
- *
- * Handles both percentage-based widths (e.g., "28.7%") and fixed widths
- * (e.g., "5cm", "100pt"). Percentage widths use type="pct" with value * 50
- * per OOXML specification.
- *
- * @private
- * @param {string} width - Width specification
- * @returns {Object} Parsed width with value and type
- * @returns {number} return.value - Width value for OOXML
- * @returns {string} return.type - OOXML width type ("pct" or "dxa")
- */
 function parseTableCellWidth(width: string): { value: number; type: string } {
   const isPercentage = width.endsWith("%");
 
@@ -165,12 +151,6 @@ function parseTableCellWidth(width: string): { value: number; type: string } {
   return { value: parseNumberTwips(width), type: "dxa" };
 }
 
-/**
- * Represents a formatted text run within a table cell.
- *
- * Generates OOXML `<w:r>` element with optional run properties including
- * font styling, color, and typeface. Supports line breaks and page breaks.
- */
 class TableCellRun {
   /**
    * Creates a new text run.
@@ -200,8 +180,7 @@ class TableCellRun {
    * Generates OOXML for this text run.
    *
    * Produces a `<w:r>` element with embedded `<w:rPr>` properties if styling
-   * is specified, followed by the text content in `<w:t>`. Handles special
-   * markers for line breaks and page breaks.
+   * is specified, followed by the text content in `<w:t>`.
    *
    * @returns {string} WordprocessingML run element
    */
@@ -236,12 +215,6 @@ class TableCellRun {
   }
 }
 
-/**
- * Represents a single table row containing cells.
- *
- * Manages row-level properties and cell initialization. Calculates row height
- * based on cell contents.
- */
 class TableRow {
   private cells: TableCell[] = [];
   private isHeader: boolean;
@@ -317,12 +290,6 @@ class TableRow {
   }
 }
 
-/**
- * Represents a single table cell.
- *
- * Handles text content with multiple runs, images, cell-level styling,
- * merging properties, and margins. Supports percentage and fixed-width columns.
- */
 class TableCell {
   private imageId?: number;
 
@@ -362,26 +329,24 @@ class TableCell {
   /**
    * Builds array of text runs from cell data.
    *
-   * Processes custom runs with line breaks and page breaks. Respects
-   * `runs` property for multiple formatted segments or falls back to
-   * single text run with cell-level formatting.
+   * Processes custom runs with line breaks, page breaks, and shapes.
+   * Respects `runs` property for multiple formatted segments or falls back
+   * to single text run with cell-level formatting.
    *
    * @private
-   * @returns {TableCellRun[]} Array of formatted text runs
+   * @returns {(TableCellRun | ShapeMarker | LineBreak | PageBreak)[]} Array of formatted runs and markers
    */
-  private buildRuns(): TableCellRun[] {
-    const runs: TableCellRun[] = [];
+  private buildRuns(): (TableCellRun | ShapeMarker | LineBreak | PageBreak)[] {
+    const runs: (TableCellRun | ShapeMarker | LineBreak | PageBreak)[] = [];
 
     if (this.data.runs && this.data.runs.length > 0) {
       for (const segment of this.data.runs) {
         if (segment instanceof LineBreak) {
-          for (let i = 0; i < segment.count; i++) {
-            runs.push(new TableCellRun("\n"));
-          }
+          runs.push(segment);
         } else if (segment instanceof PageBreak) {
-          for (let i = 0; i < segment.count; i++) {
-            runs.push(new TableCellRun("[PAGE_BREAK]"));
-          }
+          runs.push(segment);
+        } else if (segment instanceof ShapeMarker) {
+          runs.push(segment);
         } else {
           runs.push(
             new TableCellRun((segment as TextRunStyle).text, {
@@ -412,10 +377,10 @@ class TableCell {
   }
 
   /**
-   * Generates OOXML paragraph for cell text content.
+   * Generates OOXML paragraph for cell content.
    *
-   * Produces a `<w:p>` element containing text runs with alignment
-   * and formatting properties. Handles line breaks and page breaks.
+   * Produces a `<w:p>` element containing text runs, shapes, and breaks
+   * with alignment and formatting properties.
    *
    * @private
    * @returns {string} WordprocessingML paragraph element
@@ -432,10 +397,17 @@ class TableCell {
 
     const runs = this.buildRuns();
     for (const run of runs) {
-      if (run.text === "\n") {
-        xml += "        <w:r><w:br/></w:r>\n";
-      } else if (run.text === "[PAGE_BREAK]") {
-        xml += '        <w:r><w:br w:type="page"/></w:r>\n';
+      if (run instanceof LineBreak) {
+        for (let i = 0; i < run.count; i++) {
+          xml += "        <w:r><w:br/></w:r>\n";
+        }
+      } else if (run instanceof PageBreak) {
+        for (let i = 0; i < run.count; i++) {
+          xml += '        <w:r><w:br w:type="page"/></w:r>\n';
+        }
+      } else if (run instanceof ShapeMarker) {
+        const shapeRun = createShapeRun(run.shapeType, run.options);
+        xml += (shapeRun as any).text;
       } else {
         xml += run.toXML();
       }
@@ -449,7 +421,7 @@ class TableCell {
    * Generates OOXML for this table cell.
    *
    * Produces a `<w:tc>` element with cell properties (width, alignment, merging),
-   * background color, margins, and content (text or image).
+   * background color, margins, and content (text, shapes, or image).
    *
    * Supports percentage-based widths and fixed widths. Cell font properties
    * override column defaults.
@@ -465,7 +437,6 @@ class TableCell {
     section: Section,
   ): string {
     const vAlign = this.data.vAlign ?? "center";
-    const align = this.data.hAlign ?? "center";
     let xml = "    <w:tc>\n";
     xml += "      <w:tcPr>\n";
 
@@ -581,15 +552,15 @@ class TableCell {
 }
 
 /**
- * Table block.
+ * Table block with shape support.
  *
  * Construct tables by defining columns in `TableOptions` and adding rows via
  * `.row(...)`. Use `section.table(options)` to obtain a `Table` tied to a
  * section — Table requires a Section context to resolve images and sizing.
  *
  * Supports percentage-based column widths, multiple text runs per cell with
- * independent formatting, line breaks, page breaks, and cell-level style
- * properties that override column defaults.
+ * independent formatting, line breaks, page breaks, shapes, and cell-level
+ * style properties that override column defaults.
  */
 export class Table extends Element {
   private rowDefs: Array<{
@@ -626,7 +597,7 @@ export class Table extends Element {
    * Adds a row to the table.
    *
    * Rows can contain simple string cells or `EnhancedTableCellData` objects
-   * with rich formatting, multiple runs, and line/page breaks.
+   * with rich formatting, multiple runs including shapes, and line/page breaks.
    *
    * First parameter can be row options object with header and repeat flags,
    * followed by cell content. If options object is omitted, all arguments
