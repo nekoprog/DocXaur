@@ -24,20 +24,7 @@ import type {
 import { Element } from "./element.ts";
 import type { Section } from "./section.ts";
 import { Image } from "./image.ts";
-import {
-  createShapeRun,
-  SHAPE_CIRCLE,
-  SHAPE_DIAMOND,
-  SHAPE_HEART,
-  SHAPE_HEXAGON,
-  SHAPE_PENTAGON,
-  SHAPE_RECT,
-  SHAPE_ROUNDED_RECT,
-  SHAPE_STAR_5,
-  SHAPE_TRIANGLE,
-  type ShapeOptions,
-  type ShapeType,
-} from "./shapes.ts";
+import { createShapeRun, type ShapeOptions, type ShapeType } from "./shapes.ts";
 
 /**
  * Represents a line break marker within cell content.
@@ -72,34 +59,31 @@ class ShapeMarker {
 /**
  * Creates a line break marker for use in table cell runs.
  *
- * @private
  * @param {number} [count] - Number of line breaks (default: 1)
  * @returns {LineBreak} Line break marker
  */
-function lineBreak(count: number = 1): LineBreak {
+export function lineBreak(count: number = 1): LineBreak {
   return new LineBreak(count);
 }
 
 /**
  * Creates a page break marker for use in table cell runs.
  *
- * @private
  * @param {number} [count] - Number of page breaks (default: 1)
  * @returns {PageBreak} Page break marker
  */
-function pageBreak(count: number = 1): PageBreak {
+export function pageBreak(count: number = 1): PageBreak {
   return new PageBreak(count);
 }
 
 /**
  * Creates a shape marker for use in table cell runs.
  *
- * @private
  * @param {ShapeType} shapeType - Shape preset identifier
  * @param {ShapeOptions} [options] - Shape configuration
  * @returns {ShapeMarker} Shape marker
  */
-function shape(
+export function shape(
   shapeType: ShapeType,
   options?: ShapeOptions,
 ): ShapeMarker {
@@ -407,10 +391,10 @@ class TableCell {
    * to single text run with cell-level formatting.
    *
    * @private
-   * @returns {(TableCellRun | ShapeMarker | LineBreak | PageBreak)[]} Array of formatted runs and markers
+   * @returns {(TableCellRun | LineBreak | PageBreak | ShapeMarker)[]} Array of formatted runs and markers
    */
-  private buildRuns(): (TableCellRun | ShapeMarker | LineBreak | PageBreak)[] {
-    const runs: (TableCellRun | ShapeMarker | LineBreak | PageBreak)[] = [];
+  private buildRuns(): (TableCellRun | LineBreak | PageBreak | ShapeMarker)[] {
+    const runs: (TableCellRun | LineBreak | PageBreak | ShapeMarker)[] = [];
 
     if (this.data.runs && this.data.runs.length > 0) {
       for (const segment of this.data.runs) {
@@ -785,15 +769,6 @@ export class Table extends Element {
     );
   }
 
-  /**
-   * Generates complete OOXML table element with section context.
-   *
-   * Produces a `<w:tbl>` element with table properties, grid definition,
-   * and rows. Supports both percentage and fixed-width columns.
-   *
-   * @param {Section} section - Parent section context
-   * @returns {string} WordprocessingML table element
-   */
   /**
    * Generates complete OOXML table element with section context.
    *
