@@ -72,31 +72,34 @@ class ShapeMarker {
 /**
  * Creates a line break marker for use in table cell runs.
  *
+ * @private
  * @param {number} [count] - Number of line breaks (default: 1)
  * @returns {LineBreak} Line break marker
  */
-export function lineBreak(count: number = 1): LineBreak {
+function lineBreakMarker(count: number = 1): LineBreak {
   return new LineBreak(count);
 }
 
 /**
  * Creates a page break marker for use in table cell runs.
  *
+ * @private
  * @param {number} [count] - Number of page breaks (default: 1)
  * @returns {PageBreak} Page break marker
  */
-export function pageBreak(count: number = 1): PageBreak {
+function pageBreakMarker(count: number = 1): PageBreak {
   return new PageBreak(count);
 }
 
 /**
  * Creates a shape marker for use in table cell runs.
  *
+ * @private
  * @param {ShapeType} shapeType - Shape preset identifier
  * @param {ShapeOptions} [options] - Shape configuration
  * @returns {ShapeMarker} Shape marker
  */
-export function shape(
+function shapeMarker(
   shapeType: ShapeType,
   options?: ShapeOptions,
 ): ShapeMarker {
@@ -444,6 +447,43 @@ class TableCell {
     }
 
     return runs;
+  }
+
+  /**
+   * Creates a line break marker.
+   *
+   * @private
+   * @param {number} [count] - Number of line breaks
+   * @returns {LineBreak} Line break marker
+   */
+  static lineBreak(count: number = 1): LineBreak {
+    return lineBreakMarker(count);
+  }
+
+  /**
+   * Creates a page break marker.
+   *
+   * @private
+   * @param {number} [count] - Number of page breaks
+   * @returns {PageBreak} Page break marker
+   */
+  static pageBreak(count: number = 1): PageBreak {
+    return pageBreakMarker(count);
+  }
+
+  /**
+   * Creates a shape marker.
+   *
+   * @private
+   * @param {ShapeType} shapeType - Shape preset identifier
+   * @param {ShapeOptions} [options] - Shape configuration
+   * @returns {ShapeMarker} Shape marker
+   */
+  static shape(
+    shapeType: ShapeType,
+    options?: ShapeOptions,
+  ): ShapeMarker {
+    return shapeMarker(shapeType, options);
   }
 
   /**
