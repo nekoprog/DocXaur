@@ -39,14 +39,29 @@ import {
   type ShapeType,
 } from "./shapes.ts";
 
+/**
+ * Represents a line break marker within cell content.
+ *
+ * @private
+ */
 class LineBreak {
   constructor(public count: number = 1) {}
 }
 
+/**
+ * Represents a page break marker within cell content.
+ *
+ * @private
+ */
 class PageBreak {
   constructor(public count: number = 1) {}
 }
 
+/**
+ * Represents a shape marker within cell content.
+ *
+ * @private
+ */
 class ShapeMarker {
   constructor(
     public shapeType: ShapeType,
@@ -88,6 +103,18 @@ export function shape(
   return new ShapeMarker(shapeType, options);
 }
 
+/**
+ * Style properties for a text run within a cell.
+ *
+ * @typedef {Object} TextRunStyle
+ * @property {string} text - Run text content
+ * @property {boolean} [bold] - Bold formatting
+ * @property {boolean} [italic] - Italic formatting
+ * @property {boolean} [underline] - Underline formatting
+ * @property {number} [fontSize] - Font size in points
+ * @property {string} [fontColor] - Font color (hex without #)
+ * @property {string} [fontName] - Font family name
+ */
 interface TextRunStyle {
   text: string;
   bold?: boolean;
@@ -98,6 +125,11 @@ interface TextRunStyle {
   fontName?: string;
 }
 
+/**
+ * Table cell run segment — text, line break, page break, or shape.
+ *
+ * @typedef {Object} CellRunSegment
+ */
 type CellRunSegment = TextRunStyle | LineBreak | PageBreak | ShapeMarker;
 
 /**
@@ -135,11 +167,31 @@ export interface EnhancedTableCellData extends TableCellData {
   runs?: CellRunSegment[];
 }
 
+/**
+ * Row-level options for header and repeat settings.
+ *
+ * @typedef {Object} TableRowOptions
+ * @property {boolean} [header] - Mark row as table header
+ * @property {boolean} [repeat] - Repeat header on page breaks (default: false)
+ */
 interface TableRowOptions {
   header?: boolean;
   repeat?: boolean;
 }
 
+/**
+ * Parses width specification to OOXML table cell width value.
+ *
+ * Handles both percentage-based widths (e.g., "28.7%") and fixed widths
+ * (e.g., "5cm", "100pt"). Percentage widths use type="pct" with value * 50
+ * per OOXML specification.
+ *
+ * @private
+ * @param {string} width - Width specification
+ * @returns {Object} Parsed width with value and type
+ * @returns {number} return.value - Width value for OOXML
+ * @returns {string} return.type - OOXML width type ("pct" or "dxa")
+ */
 function parseTableCellWidth(width: string): { value: number; type: string } {
   const isPercentage = width.endsWith("%");
 
@@ -151,6 +203,12 @@ function parseTableCellWidth(width: string): { value: number; type: string } {
   return { value: parseNumberTwips(width), type: "dxa" };
 }
 
+/**
+ * Represents a formatted text run within a table cell.
+ *
+ * Generates OOXML `<w:r>` element with optional run properties including
+ * font styling, color, and typeface.
+ */
 class TableCellRun {
   /**
    * Creates a new text run.
@@ -215,6 +273,12 @@ class TableCellRun {
   }
 }
 
+/**
+ * Represents a single table row containing cells.
+ *
+ * Manages row-level properties and cell initialization. Calculates row height
+ * based on cell contents.
+ */
 class TableRow {
   private cells: TableCell[] = [];
   private isHeader: boolean;
@@ -290,6 +354,12 @@ class TableRow {
   }
 }
 
+/**
+ * Represents a single table cell.
+ *
+ * Handles text content with multiple runs, images, shapes, cell-level styling,
+ * merging properties, and margins. Supports percentage and fixed-width columns.
+ */
 class TableCell {
   private imageId?: number;
 
@@ -712,6 +782,15 @@ export class Table extends Element {
     );
   }
 
+  /**
+   * Generates complete OOXML table element with section context.
+   *
+   * Produces a `<w:tbl>` element with table properties, grid definition,
+   * and rows. Supports both percentage and fixed-width columns.
+   *
+   * @param {Section} section - Parent section context
+   * @returns {string} WordprocessingML table element
+   */
   /**
    * Generates complete OOXML table element with section context.
    *

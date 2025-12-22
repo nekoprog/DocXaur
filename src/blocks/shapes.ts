@@ -127,12 +127,12 @@ export interface GradientStop {
  * Shape fill configuration.
  *
  * @typedef {Object} ShapeFill
- * @property {string} [color] - Solid fill color (hex without #)
+ * @property {string | "none"} [color] - Solid fill color (hex without #) or "none" for transparent
  * @property {GradientStop[]} [gradient] - Gradient fill stops
  * @property {string} [gradientAngle] - Gradient angle in degrees
  */
 export interface ShapeFill {
-  color?: string;
+  color?: string | "none";
   gradient?: GradientStop[];
   gradientAngle?: string;
 }
@@ -242,13 +242,19 @@ function parseShapeDim(dim: string): number {
 /**
  * Generates OOXML for shape fill properties.
  *
+ * Produces fill elements for solid colors, gradients, or no fill.
+ *
  * @private
  * @param {ShapeFill} [fill] - Fill configuration
- * @returns {string} OOXML solidFill or gradient element
+ * @returns {string} OOXML solidFill, noFill, or gradFill element
  */
 function buildShapeFillXML(fill?: ShapeFill): string {
-  if (!fill || (!fill.color && !fill.gradient)) {
+  if (!fill) {
     return '        <a:solidFill><a:srgbClr val="000000"/></a:solidFill>\n';
+  }
+
+  if (fill.color === "none") {
+    return "        <a:noFill/>\n";
   }
 
   if (fill.gradient && fill.gradient.length > 0) {
@@ -273,6 +279,8 @@ function buildShapeFillXML(fill?: ShapeFill): string {
 /**
  * Generates OOXML for shape line properties.
  *
+ * Produces line elements with color, width, and dash style.
+ *
  * @private
  * @param {ShapeLine} [line] - Line configuration
  * @returns {string} OOXML ln element
@@ -291,6 +299,8 @@ function buildShapeLineXML(line?: ShapeLine): string {
 
 /**
  * Generates OOXML for text box body content.
+ *
+ * Produces text box elements with paragraph and run formatting.
  *
  * @private
  * @param {TextBoxBody} textBox - Text box configuration
@@ -415,13 +425,13 @@ ${textBoxXML}                <wps:bodyPr rot="0" vert="horz" anchor="ctr" anchor
 }
 
 /**
- * Creates shape insertion for paragraph runs.
+ * Creates shape insertion for paragraph and table runs.
  *
- * Processes shape options and returns marked run for embedding in paragraph.
+ * Processes shape options and returns marked run for embedding.
  *
  * @param {ShapeType} shapeType - Shape to create
  * @param {ShapeOptions} [options] - Shape configuration
- * @returns {Object} Shape run marker for paragraph
+ * @returns {Object} Shape run marker for paragraph or table
  */
 export function createShapeRun(
   shapeType: ShapeType,
