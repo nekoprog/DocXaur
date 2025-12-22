@@ -1,6 +1,6 @@
 /**
  * Table block implementation with rich text formatting, percentage-based widths,
- * cell-level styling, and shape support.
+ * and cell-level styling.
  *
  * Construct tables by defining columns in `TableOptions` and adding rows via
  * `.row(...)`. Use `section.table(options)` to obtain a `Table` tied to a
@@ -24,191 +24,21 @@ import type {
 import { Element } from "./element.ts";
 import type { Section } from "./section.ts";
 import { Image } from "./image.ts";
-import { createShapeRun, type ShapeOptions, type ShapeType } from "./shapes.ts";
+import { buildShapeXML, type ShapeOptions, type ShapeType } from "./shapes.ts";
 
 /**
- * Represents a line break marker within cell content.
+ * Row segment — text cell, line break, page break, or shape.
  *
- * @private
+ * @typedef {Object} RowSegment
  */
-class LineBreak {
-  constructor(public count: number = 1) {}
-}
+type RowSegment =
+  | { lineBreak?: number }
+  | { pageBreak?: number }
+  | ({ shape: string } & ShapeOptions)
+  | EnhancedTableCellData;
 
 /**
- * Represents a page break marker within cell content.
- *
- * @private
- */
-class PageBreak {
-  constructor(public count: number = 1) {}
-}
-
-/**
- * Represents a shape marker within cell content.
- *
- * @private
- */
-class ShapeMarker {
-  constructor(
-    public shapeType: ShapeType,
-    public options?: ShapeOptions,
-  ) {}
-}
-
-/**
- * Creates a line break marker for use in table cell runs.
- *
- * @param {number} [count] - Number of line breaks (default: 1)
- * @returns {LineBreak} Line break marker
- */
-export function lineBreak(count: number = 1): LineBreak {
-  return new LineBreak(count);
-}
-
-/**
- * Creates a page break marker for use in table cell runs.
- *
- * @param {number} [count] - Number of page breaks (default: 1)
- * @returns {PageBreak} Page break marker
- */
-export function pageBreak(count: number = 1): PageBreak {
-  return new PageBreak(count);
-}
-
-/**
- * Creates a rectangle shape marker for use in table cell runs.
- *
- * @param {ShapeOptions} [options] - Shape configuration
- * @returns {ShapeMarker} Shape marker
- */
-export function rectangle(options?: ShapeOptions): ShapeMarker {
-  return new ShapeMarker(
-    { preset: "rect", name: "Rectangle" },
-    options,
-  );
-}
-
-/**
- * Creates a rounded rectangle shape marker for use in table cell runs.
- *
- * @param {ShapeOptions} [options] - Shape configuration
- * @returns {ShapeMarker} Shape marker
- */
-export function roundedRectangle(options?: ShapeOptions): ShapeMarker {
-  return new ShapeMarker(
-    { preset: "roundRect", name: "Rounded Rectangle" },
-    options,
-  );
-}
-
-/**
- * Creates a circle shape marker for use in table cell runs.
- *
- * @param {ShapeOptions} [options] - Shape configuration
- * @returns {ShapeMarker} Shape marker
- */
-export function circle(options?: ShapeOptions): ShapeMarker {
-  return new ShapeMarker(
-    { preset: "ellipse", name: "Circle" },
-    options,
-  );
-}
-
-/**
- * Creates a diamond shape marker for use in table cell runs.
- *
- * @param {ShapeOptions} [options] - Shape configuration
- * @returns {ShapeMarker} Shape marker
- */
-export function diamond(options?: ShapeOptions): ShapeMarker {
-  return new ShapeMarker(
-    { preset: "diamond", name: "Diamond" },
-    options,
-  );
-}
-
-/**
- * Creates a triangle shape marker for use in table cell runs.
- *
- * @param {ShapeOptions} [options] - Shape configuration
- * @returns {ShapeMarker} Shape marker
- */
-export function triangle(options?: ShapeOptions): ShapeMarker {
-  return new ShapeMarker(
-    { preset: "triangle", name: "Triangle" },
-    options,
-  );
-}
-
-/**
- * Creates a pentagon shape marker for use in table cell runs.
- *
- * @param {ShapeOptions} [options] - Shape configuration
- * @returns {ShapeMarker} Shape marker
- */
-export function pentagon(options?: ShapeOptions): ShapeMarker {
-  return new ShapeMarker(
-    { preset: "pentagon", name: "Pentagon" },
-    options,
-  );
-}
-
-/**
- * Creates a hexagon shape marker for use in table cell runs.
- *
- * @param {ShapeOptions} [options] - Shape configuration
- * @returns {ShapeMarker} Shape marker
- */
-export function hexagon(options?: ShapeOptions): ShapeMarker {
-  return new ShapeMarker(
-    { preset: "hexagon", name: "Hexagon" },
-    options,
-  );
-}
-
-/**
- * Creates a five-point star shape marker for use in table cell runs.
- *
- * @param {ShapeOptions} [options] - Shape configuration
- * @returns {ShapeMarker} Shape marker
- */
-export function star5(options?: ShapeOptions): ShapeMarker {
-  return new ShapeMarker(
-    { preset: "star5", name: "Star (5-point)" },
-    options,
-  );
-}
-
-/**
- * Creates a heart shape marker for use in table cell runs.
- *
- * @param {ShapeOptions} [options] - Shape configuration
- * @returns {ShapeMarker} Shape marker
- */
-export function heart(options?: ShapeOptions): ShapeMarker {
-  return new ShapeMarker(
-    { preset: "heart", name: "Heart" },
-    options,
-  );
-}
-
-/**
- * Creates a generic shape marker by preset for use in table cell runs.
- *
- * @param {ShapeType} shapeType - Shape preset identifier
- * @param {ShapeOptions} [options] - Shape configuration
- * @returns {ShapeMarker} Shape marker
- */
-export function shape(
-  shapeType: ShapeType,
-  options?: ShapeOptions,
-): ShapeMarker {
-  return new ShapeMarker(shapeType, options);
-}
-
-/**
- * Style properties for a text run within a cell.
+ * Text run style properties.
  *
  * @typedef {Object} TextRunStyle
  * @property {string} text - Run text content
@@ -216,7 +46,7 @@ export function shape(
  * @property {boolean} [italic] - Italic formatting
  * @property {boolean} [underline] - Underline formatting
  * @property {number} [fontSize] - Font size in points
- * @property {string} [fontColor] - Font color (hex without #)
+ * @property {string} [fontColor] - Font color hex
  * @property {string} [fontName] - Font family name
  */
 interface TextRunStyle {
@@ -230,37 +60,35 @@ interface TextRunStyle {
 }
 
 /**
- * Table cell run segment — text, line break, page break, or shape.
+ * Table cell run segment — text, line break, or page break.
  *
  * @typedef {Object} CellRunSegment
  */
-type CellRunSegment = TextRunStyle | LineBreak | PageBreak | ShapeMarker;
+type CellRunSegment = TextRunStyle | { lineBreak: number } | {
+  pageBreak: number;
+};
 
 /**
- * Table cell data with support for rich text runs, breaks, and shapes.
+ * Enhanced table cell data with rich formatting.
  *
  * Extends base TableCellData to provide multiple formatted text segments,
- * line and page break support, shape insertion, and per-cell font formatting
- * that overrides column defaults.
- *
- * When using `runs` for multiple formatted text segments, alignment can be
- * controlled via `hAlign` and `vAlign` properties on the cell data object,
- * or inherited from column defaults if not specified.
+ * line and page break support, and per-cell font formatting that overrides
+ * column defaults.
  *
  * @typedef {Object} EnhancedTableCellData
- * @property {string} [text] - Single text run (used if runs not provided)
- * @property {(TextRunStyle | LineBreak | PageBreak | ShapeMarker)[]} [runs] - Array of formatted text segments, line breaks, page breaks, and shapes
- * @property {string} [fontName] - Font family (overrides column default)
- * @property {number} [fontSize] - Font size in points (overrides column default)
- * @property {string} [fontColor] - Font color hex (overrides column default)
- * @property {boolean} [bold] - Bold formatting (overrides column default)
- * @property {boolean} [italic] - Italic formatting (overrides column default)
- * @property {boolean} [underline] - Underline formatting (overrides column default)
- * @property {string} [hAlign] - Horizontal alignment: "left" | "center" | "right" | "justify" (overrides column default)
- * @property {string} [vAlign] - Vertical alignment: "top" | "center" | "bottom" (overrides column default)
+ * @property {string} [text] - Single text run
+ * @property {CellRunSegment[]} [runs] - Array of formatted text segments, line breaks, and page breaks
+ * @property {string} [fontName] - Font family
+ * @property {number} [fontSize] - Font size in points
+ * @property {string} [fontColor] - Font color hex
+ * @property {boolean} [bold] - Bold formatting
+ * @property {boolean} [italic] - Italic formatting
+ * @property {boolean} [underline] - Underline formatting
+ * @property {string} [hAlign] - Horizontal alignment
+ * @property {string} [vAlign] - Vertical alignment
  * @property {string} [cellColor] - Cell background color hex
  * @property {number} [colspan] - Column span count
- * @property {number} [rowspan] - Row span count (0 for continuation)
+ * @property {number} [rowspan] - Row span count
  * @property {string} [height] - Cell height
  * @property {string} [marginTop] - Top margin
  * @property {string} [marginRight] - Right margin
@@ -276,7 +104,7 @@ export interface EnhancedTableCellData extends TableCellData {
  *
  * @typedef {Object} TableRowOptions
  * @property {boolean} [header] - Mark row as table header
- * @property {boolean} [repeat] - Repeat header on page breaks (default: false)
+ * @property {boolean} [repeat] - Repeat header on page breaks
  */
 interface TableRowOptions {
   header?: boolean;
@@ -286,15 +114,12 @@ interface TableRowOptions {
 /**
  * Parses width specification to OOXML table cell width value.
  *
- * Handles both percentage-based widths (e.g., "28.7%") and fixed widths
- * (e.g., "5cm", "100pt"). Percentage widths use type="pct" with value * 50
- * per OOXML specification.
+ * Handles both percentage-based widths and fixed widths.
+ * Percentage widths use type="pct" with value * 50 per OOXML specification.
  *
  * @private
  * @param {string} width - Width specification
  * @returns {Object} Parsed width with value and type
- * @returns {number} return.value - Width value for OOXML
- * @returns {string} return.type - OOXML width type ("pct" or "dxa")
  */
 function parseTableCellWidth(width: string): { value: number; type: string } {
   const isPercentage = width.endsWith("%");
@@ -308,23 +133,19 @@ function parseTableCellWidth(width: string): { value: number; type: string } {
 }
 
 /**
- * Represents a formatted text run within a table cell.
+ * Formatted text run within a table cell.
  *
  * Generates OOXML `<w:r>` element with optional run properties including
  * font styling, color, and typeface.
  */
 class TableCellRun {
+  isShape: boolean = false;
+
   /**
    * Creates a new text run.
    *
    * @param {string} text - Run text content
    * @param {Object} [style] - Run styling
-   * @param {boolean} [style.bold] - Bold formatting
-   * @param {boolean} [style.italic] - Italic formatting
-   * @param {boolean} [style.underline] - Underline formatting
-   * @param {number} [style.fontSize] - Font size in points
-   * @param {string} [style.fontColor] - Font color (hex without #)
-   * @param {string} [style.fontName] - Font family
    */
   constructor(
     public text: string,
@@ -347,6 +168,10 @@ class TableCellRun {
    * @returns {string} WordprocessingML run element
    */
   toXML(): string {
+    if (this.isShape) {
+      return this.text;
+    }
+
     let xml = "        <w:r>\n";
 
     if (this.style && Object.values(this.style).some((v) => v !== undefined)) {
@@ -378,28 +203,28 @@ class TableCellRun {
 }
 
 /**
- * Represents a single table row containing cells.
+ * Single table row containing cells.
  *
  * Manages row-level properties and cell initialization. Calculates row height
  * based on cell contents.
  */
 class TableRow {
   private cells: TableCell[] = [];
-  private isHeader: boolean;
-  private repeatHeader: boolean;
+  private header: boolean;
+  private repeat: boolean;
 
   /**
    * Creates a new table row.
    *
    * @param {TableOptions} tableOptions - Parent table options
-   * @param {TableRowOptions} [options] - Row-level options for header and repeat
+   * @param {TableRowOptions} [options] - Row-level options
    */
   constructor(
     private tableOptions: TableOptions,
     options?: TableRowOptions,
   ) {
-    this.isHeader = options?.header ?? false;
-    this.repeatHeader = options?.repeat ?? false;
+    this.header = options?.header ?? false;
+    this.repeat = options?.repeat ?? false;
   }
 
   /**
@@ -416,8 +241,8 @@ class TableRow {
   /**
    * Initializes all cells.
    *
-   * Performs async operations like image registration. Must be called
-   * before generating XML.
+   * Performs async operations like image registration.
+   * Must be called before generating XML.
    *
    * @param {Section} section - Parent section context
    * @returns {Promise<void>}
@@ -439,7 +264,7 @@ class TableRow {
     let xml = "  <w:tr>\n";
     xml += "    <w:trPr>\n";
 
-    if (this.isHeader && this.repeatHeader) {
+    if (this.header && this.repeat) {
       xml += "      <w:tblHeader/>\n";
     }
 
@@ -459,9 +284,9 @@ class TableRow {
 }
 
 /**
- * Represents a single table cell.
+ * Single table cell.
  *
- * Handles text content with multiple runs, images, shapes, cell-level styling,
+ * Handles text content with multiple runs, images, cell-level styling,
  * merging properties, and margins. Supports percentage and fixed-width columns.
  */
 class TableCell {
@@ -503,24 +328,45 @@ class TableCell {
   /**
    * Builds array of text runs from cell data.
    *
-   * Processes custom runs with line breaks, page breaks, and shapes.
-   * Respects `runs` property for multiple formatted segments or falls back
-   * to single text run with cell-level formatting.
+   * Processes custom runs with text, line breaks, page breaks, and shapes.
+   * Respects `runs` property for multiple formatted segments or falls back to
+   * single text run with cell-level formatting.
    *
    * @private
-   * @returns {(TableCellRun | LineBreak | PageBreak | ShapeMarker)[]} Array of formatted runs and markers
+   * @returns {TableCellRun[]} Array of formatted text runs
    */
-  private buildRuns(): (TableCellRun | LineBreak | PageBreak | ShapeMarker)[] {
-    const runs: (TableCellRun | LineBreak | PageBreak | ShapeMarker)[] = [];
+  private buildRuns(): TableCellRun[] {
+    const runs: TableCellRun[] = [];
 
     if (this.data.runs && this.data.runs.length > 0) {
       for (const segment of this.data.runs) {
-        if (segment instanceof LineBreak) {
-          runs.push(segment);
-        } else if (segment instanceof PageBreak) {
-          runs.push(segment);
-        } else if (segment instanceof ShapeMarker) {
-          runs.push(segment);
+        if ("lineBreak" in segment) {
+          for (let i = 0; i < segment.lineBreak; i++) {
+            runs.push(new TableCellRun("\n"));
+          }
+        } else if ("pageBreak" in segment) {
+          for (let i = 0; i < segment.pageBreak; i++) {
+            runs.push(new TableCellRun("[PAGE_BREAK]"));
+          }
+        } else if ("shape" in segment) {
+          const shapeSegment = segment as { shape: string } & ShapeOptions;
+          const shapeTypeMap: Record<string, ShapeType> = {
+            rect: { preset: "rect", name: "Rectangle" },
+            roundRect: { preset: "roundRect", name: "Rounded Rectangle" },
+            ellipse: { preset: "ellipse", name: "Circle" },
+            diamond: { preset: "diamond", name: "Diamond" },
+            triangle: { preset: "triangle", name: "Triangle" },
+            pentagon: { preset: "pentagon", name: "Pentagon" },
+            hexagon: { preset: "hexagon", name: "Hexagon" },
+            star5: { preset: "star5", name: "Star (5-point)" },
+            heart: { preset: "heart", name: "Heart" },
+          };
+
+          const shapeType = shapeTypeMap[shapeSegment.shape] ??
+            shapeTypeMap.rect;
+          const shapeXML = buildShapeXML(shapeType, shapeSegment);
+          runs.push(new TableCellRun(shapeXML, undefined));
+          runs[runs.length - 1].isShape = true;
         } else {
           runs.push(
             new TableCellRun((segment as TextRunStyle).text, {
@@ -551,10 +397,10 @@ class TableCell {
   }
 
   /**
-   * Generates OOXML paragraph for cell content.
+   * Generates OOXML paragraph for cell text content.
    *
-   * Produces a `<w:p>` element containing text runs, shapes, and breaks
-   * with alignment and formatting properties.
+   * Produces a `<w:p>` element containing text runs with alignment
+   * and formatting properties. Handles line breaks and page breaks.
    *
    * @private
    * @returns {string} WordprocessingML paragraph element
@@ -571,17 +417,10 @@ class TableCell {
 
     const runs = this.buildRuns();
     for (const run of runs) {
-      if (run instanceof LineBreak) {
-        for (let i = 0; i < run.count; i++) {
-          xml += "        <w:r><w:br/></w:r>\n";
-        }
-      } else if (run instanceof PageBreak) {
-        for (let i = 0; i < run.count; i++) {
-          xml += '        <w:r><w:br w:type="page"/></w:r>\n';
-        }
-      } else if (run instanceof ShapeMarker) {
-        const shapeRun = createShapeRun(run.shapeType, run.options);
-        xml += (shapeRun as any).text;
+      if (run.text === "\n") {
+        xml += "        <w:r><w:br/></w:r>\n";
+      } else if (run.text === "[PAGE_BREAK]") {
+        xml += '        <w:r><w:br w:type="page"/></w:r>\n';
       } else {
         xml += run.toXML();
       }
@@ -595,7 +434,7 @@ class TableCell {
    * Generates OOXML for this table cell.
    *
    * Produces a `<w:tc>` element with cell properties (width, alignment, merging),
-   * background color, margins, and content (text, shapes, or image).
+   * background color, margins, and content (text or image).
    *
    * Supports percentage-based widths and fixed widths. Cell font properties
    * override column defaults.
@@ -611,6 +450,7 @@ class TableCell {
     section: Section,
   ): string {
     const vAlign = this.data.vAlign ?? "center";
+    const align = this.data.hAlign ?? "center";
     let xml = "    <w:tc>\n";
     xml += "      <w:tcPr>\n";
 
@@ -726,19 +566,19 @@ class TableCell {
 }
 
 /**
- * Table block with shape support.
+ * Table block.
  *
  * Construct tables by defining columns in `TableOptions` and adding rows via
  * `.row(...)`. Use `section.table(options)` to obtain a `Table` tied to a
  * section — Table requires a Section context to resolve images and sizing.
  *
  * Supports percentage-based column widths, multiple text runs per cell with
- * independent formatting, line breaks, page breaks, shapes, and cell-level
- * style properties that override column defaults.
+ * independent formatting, line breaks, page breaks, and cell-level style
+ * properties that override column defaults.
  */
 export class Table extends Element {
   private rowDefs: Array<{
-    cells: (string | EnhancedTableCellData)[];
+    cells: RowSegment[];
     options?: TableRowOptions;
   }> = [];
   private rows: TableRow[] = [];
@@ -749,15 +589,6 @@ export class Table extends Element {
    * Creates a new table.
    *
    * @param {TableOptions} options - Table configuration
-   * @param {TableColumn[]} options.columns - Column definitions with width
-   * @param {string} [options.width] - Table width (percentage or fixed)
-   * @param {string} [options.align] - Table alignment (left, center, right, justify)
-   * @param {boolean} [options.borders] - Show table borders (default: true)
-   * @param {string} [options.indent] - Table indentation
-   * @param {string} [options.marginTop] - Top margin for all cells
-   * @param {string} [options.marginRight] - Right margin for all cells
-   * @param {string} [options.marginBottom] - Bottom margin for all cells
-   * @param {string} [options.marginLeft] - Left margin for all cells
    */
   constructor(options: TableOptions) {
     super();
@@ -770,19 +601,26 @@ export class Table extends Element {
   /**
    * Adds a row to the table.
    *
-   * Rows can contain simple string cells or `EnhancedTableCellData` objects
-   * with rich formatting, multiple runs including shapes, and line/page breaks.
+   * Cell content can be simple strings or `EnhancedTableCellData` objects
+   * with rich formatting. Special segments support line breaks, page breaks,
+   * and shapes:
+   *
+   * - `{ lineBreak: number }` — insert line break(s)
+   * - `{ pageBreak: number }` — insert page break(s)
+   * - `{ shape: string; width?: string; height?: string; text?: string; ... }` — insert shape with sizing and text
    *
    * First parameter can be row options object with header and repeat flags,
    * followed by cell content. If options object is omitted, all arguments
    * are treated as cell content.
    *
-   * @param {...(string | EnhancedTableCellData | TableRowOptions)[]} args - Row options object optionally followed by cell data
+   * @param {...(string | EnhancedTableCellData | TableRowOptions | RowSegment)[]} args - Row options object optionally followed by cell data
    * @returns {this}
    */
-  row(...args: (string | EnhancedTableCellData | TableRowOptions)[]): this {
+  row(
+    ...args: (string | EnhancedTableCellData | TableRowOptions | RowSegment)[]
+  ): this {
     let options: TableRowOptions | undefined;
-    let cells: (string | EnhancedTableCellData)[] = [];
+    let cells: RowSegment[] = [];
 
     if (
       args.length > 0 &&
@@ -791,29 +629,12 @@ export class Table extends Element {
       (("header" in args[0]) || ("repeat" in args[0]))
     ) {
       options = args[0] as TableRowOptions;
-      cells = args.slice(1) as (string | EnhancedTableCellData)[];
+      cells = args.slice(1) as RowSegment[];
     } else {
-      cells = args as (string | EnhancedTableCellData)[];
+      cells = args as RowSegment[];
     }
 
     this.rowDefs.push({ cells, options });
-    return this;
-  }
-
-  /**
-   * Applies conditional operations to the table.
-   *
-   * @deprecated Use direct `.row()` calls instead.
-   * @param {...Function[]} ops - Operations to apply
-   * @returns {this}
-   */
-  apply(...ops: ((builder: this) => this)[]): this {
-    console.warn(
-      "Table.apply() is deprecated. Use direct .row() calls instead.",
-    );
-    for (const op of ops) {
-      op(this);
-    }
     return this;
   }
 
@@ -832,41 +653,77 @@ export class Table extends Element {
     for (const rowDef of this.rowDefs) {
       const row = new TableRow(this.options, rowDef.options);
       rowDef.cells.forEach((cell, i) => {
-        const colOptions = this.options.columns[i];
-        if (typeof cell === "string") {
+        if ("lineBreak" in cell) {
           row.cell({
-            text: cell,
-            hAlign: colOptions?.hAlign ?? "center",
+            runs: [{ lineBreak: cell.lineBreak ?? 1 }],
+          });
+        } else if ("pageBreak" in cell) {
+          row.cell({
+            runs: [{ pageBreak: cell.pageBreak ?? 1 }],
+          });
+        } else if ("shape" in cell) {
+          const shapeCell = cell as { shape: string } & ShapeOptions;
+          const shapeStr = shapeCell.shape;
+          const colOptions = this.options.columns[i];
+
+          const shapeTypeMap: Record<string, ShapeType> = {
+            rect: { preset: "rect", name: "Rectangle" },
+            roundRect: { preset: "roundRect", name: "Rounded Rectangle" },
+            ellipse: { preset: "ellipse", name: "Circle" },
+            diamond: { preset: "diamond", name: "Diamond" },
+            triangle: { preset: "triangle", name: "Triangle" },
+            pentagon: { preset: "pentagon", name: "Pentagon" },
+            hexagon: { preset: "hexagon", name: "Hexagon" },
+            star5: { preset: "star5", name: "Star (5-point)" },
+            heart: { preset: "heart", name: "Heart" },
+          };
+
+          const shapeType = shapeTypeMap[shapeStr] ?? shapeTypeMap.rect;
+          const shapeXML = buildShapeXML(shapeType, shapeCell);
+
+          row.cell({
+            text: "",
+            hAlign: shapeCell.align ?? colOptions?.hAlign ?? "center",
             vAlign: colOptions?.vAlign ?? "center",
-            fontName: colOptions?.fontName,
-            fontSize: colOptions?.fontSize,
-            fontColor: colOptions?.fontColor,
-            cellColor: colOptions?.cellColor,
-            bold: colOptions?.bold,
-            italic: colOptions?.italic,
-            underline: colOptions?.underline,
-            marginTop: colOptions?.marginTop,
-            marginRight: colOptions?.marginRight,
-            marginBottom: colOptions?.marginBottom,
-            marginLeft: colOptions?.marginLeft,
           });
         } else {
-          row.cell({
-            hAlign: cell.hAlign ?? colOptions?.hAlign ?? "center",
-            vAlign: cell.vAlign ?? colOptions?.vAlign ?? "center",
-            fontName: cell.fontName ?? colOptions?.fontName,
-            fontSize: cell.fontSize ?? colOptions?.fontSize,
-            fontColor: cell.fontColor ?? colOptions?.fontColor,
-            cellColor: cell.cellColor ?? colOptions?.cellColor,
-            bold: cell.bold ?? colOptions?.bold,
-            italic: cell.italic ?? colOptions?.italic,
-            underline: cell.underline ?? colOptions?.underline,
-            marginTop: cell.marginTop ?? colOptions?.marginTop,
-            marginRight: cell.marginRight ?? colOptions?.marginRight,
-            marginBottom: cell.marginBottom ?? colOptions?.marginBottom,
-            marginLeft: cell.marginLeft ?? colOptions?.marginLeft,
-            ...cell,
-          });
+          const col = this.options.columns[i];
+          if (typeof cell === "string") {
+            row.cell({
+              text: cell,
+              hAlign: col?.hAlign ?? "center",
+              vAlign: col?.vAlign ?? "center",
+              fontName: col?.fontName,
+              fontSize: col?.fontSize,
+              fontColor: col?.fontColor,
+              cellColor: col?.cellColor,
+              bold: col?.bold,
+              italic: col?.italic,
+              underline: col?.underline,
+              marginTop: col?.marginTop,
+              marginRight: col?.marginRight,
+              marginBottom: col?.marginBottom,
+              marginLeft: col?.marginLeft,
+            });
+          } else {
+            const cellData = cell as EnhancedTableCellData;
+            row.cell({
+              hAlign: cellData.hAlign ?? col?.hAlign ?? "center",
+              vAlign: cellData.vAlign ?? col?.vAlign ?? "center",
+              fontName: cellData.fontName ?? col?.fontName,
+              fontSize: cellData.fontSize ?? col?.fontSize,
+              fontColor: cellData.fontColor ?? col?.fontColor,
+              cellColor: cellData.cellColor ?? col?.cellColor,
+              bold: cellData.bold ?? col?.bold,
+              italic: cellData.italic ?? col?.italic,
+              underline: cellData.underline ?? col?.underline,
+              marginTop: cellData.marginTop ?? col?.marginTop,
+              marginRight: cellData.marginRight ?? col?.marginRight,
+              marginBottom: cellData.marginBottom ?? col?.marginBottom,
+              marginLeft: cellData.marginLeft ?? col?.marginLeft,
+              ...cellData,
+            });
+          }
         }
       });
       this.rows.push(row);

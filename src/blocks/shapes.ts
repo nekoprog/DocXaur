@@ -116,7 +116,7 @@ export const SHAPE_HEART: ShapeType = {
  *
  * @typedef {Object} GradientStop
  * @property {number} position - Position in gradient (0-100000)
- * @property {string} color - Stop color (hex without #)
+ * @property {string} color - Stop color hex
  */
 export interface GradientStop {
   position: number;
@@ -127,12 +127,12 @@ export interface GradientStop {
  * Shape fill configuration.
  *
  * @typedef {Object} ShapeFill
- * @property {string | "none"} [color] - Solid fill color (hex without #) or "none" for transparent
+ * @property {string} [color] - Solid fill color hex or "none"
  * @property {GradientStop[]} [gradient] - Gradient fill stops
  * @property {string} [gradientAngle] - Gradient angle in degrees
  */
 export interface ShapeFill {
-  color?: string | "none";
+  color?: string;
   gradient?: GradientStop[];
   gradientAngle?: string;
 }
@@ -141,9 +141,9 @@ export interface ShapeFill {
  * Shape line/border configuration.
  *
  * @typedef {Object} ShapeLine
- * @property {string} [color] - Line color (hex without #)
+ * @property {string} [color] - Line color hex or "none"
  * @property {number} [width] - Line width in pt
- * @property {string} [dash] - Dash style ("solid" | "dash" | "dot" | "dashDot" | "dashDotDot")
+ * @property {string} [dash] - Dash style
  */
 export interface ShapeLine {
   color?: string;
@@ -155,8 +155,8 @@ export interface ShapeLine {
  * Shape size configuration.
  *
  * @typedef {Object} ShapeSize
- * @property {string} [width] - Width (cm, pt, mm, in, px)
- * @property {string} [height] - Height (cm, pt, mm, in, px)
+ * @property {string} [width] - Width dimension
+ * @property {string} [height] - Height dimension
  */
 export interface ShapeSize {
   width?: string;
@@ -164,20 +164,20 @@ export interface ShapeSize {
 }
 
 /**
- * Text box body configuration.
+ * Text box configuration for shape.
  *
- * @typedef {Object} TextBoxBody
- * @property {string} text - Text content
+ * @typedef {Object} ShapeTextBox
+ * @property {string} [text] - Text content
  * @property {boolean} [bold] - Bold formatting
  * @property {boolean} [italic] - Italic formatting
  * @property {boolean} [underline] - Underline formatting
  * @property {number} [fontSize] - Font size in points
- * @property {string} [fontColor] - Text color (hex without #)
+ * @property {string} [fontColor] - Text color hex
  * @property {string} [fontName] - Font family
- * @property {string} [align] - Text alignment ("left" | "center" | "right" | "justify")
+ * @property {string} [align] - Text alignment
  */
-export interface TextBoxBody {
-  text: string;
+export interface ShapeTextBox {
+  text?: string;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
@@ -194,17 +194,17 @@ export interface TextBoxBody {
  * @property {ShapeSize} [size] - Shape dimensions
  * @property {ShapeFill} [fill] - Fill properties
  * @property {ShapeLine} [line] - Border/line properties
- * @property {string} [align] - Horizontal alignment ("left" | "center" | "right")
- * @property {"anchor" | "inline"} [position] - Shape positioning mode (default: "anchor")
- * @property {TextBoxBody} [textBox] - Text box body and styling
+ * @property {ShapeTextBox} [textBox] - Text box content and styling
+ * @property {string} [align] - Horizontal alignment
+ * @property {"anchor" | "inline"} [position] - Shape positioning mode
  */
 export interface ShapeOptions {
   size?: ShapeSize;
   fill?: ShapeFill;
   line?: ShapeLine;
+  textBox?: ShapeTextBox;
   align?: "left" | "center" | "right";
   position?: "anchor" | "inline";
-  textBox?: TextBoxBody;
 }
 
 let shapeCounter = 1;
@@ -213,7 +213,7 @@ let shapeCounter = 1;
  * Parses dimension string to EMU units.
  *
  * @private
- * @param {string} dim - Dimension string (cm, pt, mm, in, px)
+ * @param {string} dim - Dimension string
  * @returns {number} Dimension in EMU
  */
 function parseShapeDim(dim: string): number {
@@ -242,11 +242,9 @@ function parseShapeDim(dim: string): number {
 /**
  * Generates OOXML for shape fill properties.
  *
- * Produces fill elements for solid colors, gradients, or no fill.
- *
  * @private
  * @param {ShapeFill} [fill] - Fill configuration
- * @returns {string} OOXML solidFill, noFill, or gradFill element
+ * @returns {string} OOXML solidFill or gradient element
  */
 function buildShapeFillXML(fill?: ShapeFill): string {
   if (!fill) {
@@ -279,8 +277,6 @@ function buildShapeFillXML(fill?: ShapeFill): string {
 /**
  * Generates OOXML for shape line properties.
  *
- * Produces line elements with color, width, and dash style.
- *
  * @private
  * @param {ShapeLine} [line] - Line configuration
  * @returns {string} OOXML ln element
@@ -288,6 +284,10 @@ function buildShapeFillXML(fill?: ShapeFill): string {
 function buildShapeLineXML(line?: ShapeLine): string {
   if (!line || (!line.color && !line.width)) {
     return '        <a:ln w="19050"><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:prstDash val="solid"/><a:round/></a:ln>\n';
+  }
+
+  if (line.color === "none") {
+    return '        <a:ln w="19050"><a:noFill/><a:prstDash val="solid"/><a:round/></a:ln>\n';
   }
 
   const color = line.color || "000000";
@@ -300,13 +300,13 @@ function buildShapeLineXML(line?: ShapeLine): string {
 /**
  * Generates OOXML for text box body content.
  *
- * Produces text box elements with paragraph and run formatting.
- *
  * @private
- * @param {TextBoxBody} textBox - Text box configuration
+ * @param {ShapeTextBox} textBox - Text box configuration
  * @returns {string} OOXML text body element
  */
-function buildTextBoxXML(textBox: TextBoxBody): string {
+function buildTextBoxXML(textBox: ShapeTextBox): string {
+  if (!textBox.text) return "";
+
   const align = textBox.align || "left";
   const jc = align === "justify" ? "both" : align;
 
@@ -348,20 +348,25 @@ function buildTextBoxXML(textBox: TextBoxBody): string {
  * Generates OOXML DrawingML shape element.
  *
  * Produces a complete shape element with fill, line, and optional text box.
- * Supports both anchor-positioned (floating) and inline shapes.
+ * Supports both anchor-positioned and inline shapes.
  *
  * @param {ShapeType} shapeType - Shape preset
- * @param {number} width - Width in EMU
- * @param {number} height - Height in EMU
+ * @param {number} [width] - Width in EMU
+ * @param {number} [height] - Height in EMU
  * @param {ShapeOptions} [options] - Shape styling and positioning
  * @returns {string} OOXML shape element
  */
 export function buildShapeXML(
   shapeType: ShapeType,
-  width: number,
-  height: number,
   options?: ShapeOptions,
 ): string {
+  const width = options?.size?.width
+    ? parseShapeDim(options.size.width)
+    : cmToEmu(2);
+  const height = options?.size?.height
+    ? parseShapeDim(options.size.height)
+    : cmToEmu(2);
+
   const fillXML = buildShapeFillXML(options?.fill);
   const lineXML = buildShapeLineXML(options?.line);
   const textBoxXML = options?.textBox ? buildTextBoxXML(options.textBox) : "";
@@ -425,24 +430,18 @@ ${textBoxXML}                <wps:bodyPr rot="0" vert="horz" anchor="ctr" anchor
 }
 
 /**
- * Creates shape insertion for paragraph and table runs.
+ * Creates shape insertion for paragraph runs.
  *
- * Processes shape options and returns marked run for embedding.
+ * Processes shape options and returns marked run for embedding in paragraph.
  *
  * @param {ShapeType} shapeType - Shape to create
  * @param {ShapeOptions} [options] - Shape configuration
- * @returns {Object} Shape run marker for paragraph or table
+ * @returns {Object} Shape run marker for paragraph
  */
 export function createShapeRun(
   shapeType: ShapeType,
   options?: ShapeOptions,
 ): any {
-  const width = options?.size?.width
-    ? parseShapeDim(options.size.width)
-    : cmToEmu(2);
-  const height = options?.size?.height
-    ? parseShapeDim(options.size.height)
-    : cmToEmu(2);
-  const shapeXML = buildShapeXML(shapeType, width, height, options);
+  const shapeXML = buildShapeXML(shapeType, options);
   return { text: shapeXML, isShape: true };
 }
