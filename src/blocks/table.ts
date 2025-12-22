@@ -76,7 +76,7 @@ class ShapeMarker {
  * @param {number} [count] - Number of line breaks (default: 1)
  * @returns {LineBreak} Line break marker
  */
-function lineBreakMarker(count: number = 1): LineBreak {
+function lineBreak(count: number = 1): LineBreak {
   return new LineBreak(count);
 }
 
@@ -87,7 +87,7 @@ function lineBreakMarker(count: number = 1): LineBreak {
  * @param {number} [count] - Number of page breaks (default: 1)
  * @returns {PageBreak} Page break marker
  */
-function pageBreakMarker(count: number = 1): PageBreak {
+function pageBreak(count: number = 1): PageBreak {
   return new PageBreak(count);
 }
 
@@ -99,7 +99,7 @@ function pageBreakMarker(count: number = 1): PageBreak {
  * @param {ShapeOptions} [options] - Shape configuration
  * @returns {ShapeMarker} Shape marker
  */
-function shapeMarker(
+function shape(
   shapeType: ShapeType,
   options?: ShapeOptions,
 ): ShapeMarker {
@@ -447,43 +447,6 @@ class TableCell {
     }
 
     return runs;
-  }
-
-  /**
-   * Creates a line break marker.
-   *
-   * @private
-   * @param {number} [count] - Number of line breaks
-   * @returns {LineBreak} Line break marker
-   */
-  static lineBreak(count: number = 1): LineBreak {
-    return lineBreakMarker(count);
-  }
-
-  /**
-   * Creates a page break marker.
-   *
-   * @private
-   * @param {number} [count] - Number of page breaks
-   * @returns {PageBreak} Page break marker
-   */
-  static pageBreak(count: number = 1): PageBreak {
-    return pageBreakMarker(count);
-  }
-
-  /**
-   * Creates a shape marker.
-   *
-   * @private
-   * @param {ShapeType} shapeType - Shape preset identifier
-   * @param {ShapeOptions} [options] - Shape configuration
-   * @returns {ShapeMarker} Shape marker
-   */
-  static shape(
-    shapeType: ShapeType,
-    options?: ShapeOptions,
-  ): ShapeMarker {
-    return shapeMarker(shapeType, options);
   }
 
   /**
