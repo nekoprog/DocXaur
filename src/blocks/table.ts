@@ -1,16 +1,4 @@
 /**
-   * Applies conditional operations to the table.
-   *
-   * @deprecated Use direct `.row()` calls instead.
-   * @param {...Function[]} ops - Operations to apply
-   * @returns {this}
-   */
-  apply(...ops: ((builder: this) => this)[]): this {
-    for (const op of ops) {
-      op(this);
-    }
-    return this;
-  }/**
  * Table block implementation with rich text formatting, percentage-based widths,
  * and cell-level styling.
  *
@@ -36,11 +24,7 @@ import type {
 import { Element } from "./element.ts";
 import type { Section } from "./section.ts";
 import { Image } from "./image.ts";
-import {
-  buildShapeXML,
-  type ShapeOptions,
-  type ShapeType,
-} from "./shapes.ts";
+import { buildShapeXML, type ShapeOptions, type ShapeType } from "./shapes.ts";
 
 /**
  * Row segment — text cell, line break, page break, or shape.
@@ -80,7 +64,9 @@ interface TextRunStyle {
  *
  * @typedef {Object} CellRunSegment
  */
-type CellRunSegment = TextRunStyle | { lineBreak: number } | { pageBreak: number } | ({ shape: string } & ShapeOptions);
+type CellRunSegment = TextRunStyle | { lineBreak: number } | {
+  pageBreak: number;
+} | ({ shape: string } & ShapeOptions);
 
 /**
  * Enhanced table cell data with rich formatting.
@@ -378,7 +364,8 @@ class TableCell {
             heart: { preset: "heart", name: "Heart" },
           };
 
-          const shapeType = shapeTypeMap[shapeSegment.shape] ?? shapeTypeMap.rect;
+          const shapeType = shapeTypeMap[shapeSegment.shape] ??
+            shapeTypeMap.rect;
           const shapeXML = buildShapeXML(shapeType, shapeSegment);
           runs.push(new TableCellRun(shapeXML, undefined));
           runs[runs.length - 1].isShape = true;
@@ -633,7 +620,9 @@ export class Table extends Element {
    * @param {...(string | EnhancedTableCellData | TableRowOptions | RowSegment)[]} args - Row options object optionally followed by cell data
    * @returns {this}
    */
-  row(...args: (string | EnhancedTableCellData | TableRowOptions | RowSegment)[]): this {
+  row(
+    ...args: (string | EnhancedTableCellData | TableRowOptions | RowSegment)[]
+  ): this {
     let options: TableRowOptions | undefined;
     let cells: RowSegment[] = [];
 
