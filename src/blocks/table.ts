@@ -424,7 +424,11 @@ class TableCell {
       } else if (run.text === "[PAGE_BREAK]") {
         xml += '        <w:r><w:br w:type="page"/></w:r>\n';
       } else if (run.isShape) {
-        xml += run.toXML();
+        const shapeXML = run.text
+          .split("\n")
+          .map((line) => "        " + line)
+          .join("\n");
+        xml += shapeXML + "\n";
       } else {
         xml += run.toXML();
       }
