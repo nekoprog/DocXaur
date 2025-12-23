@@ -7,7 +7,7 @@
  * @module
  */
 
-import { cmToEmu } from "../core/utils.ts";
+import { cmToEmu, escapeXML as escRunText } from "../core/utils.ts";
 
 /**
  * Shape type identifier with preset name.
@@ -336,7 +336,7 @@ function buildTextBoxXML(textBox: ShapeTextBox): string {
       `                        <w:rFonts w:ascii="${textBox.fontName}" w:hAnsi="${textBox.fontName}"/>\n`;
   }
   xml += "                      </w:rPr>\n";
-  xml += `                      <w:t>${textBox.text}</w:t>\n`;
+  xml += `                      <w:t>${escRunText(textBox.text)}</w:t>\n`;
   xml += "                    </w:r>\n";
   xml += "                  </w:p>\n";
   xml += "                </w:txbxContent>\n";
@@ -383,50 +383,50 @@ export function buildShapeXML(
           <wp:docPr id="${shapeId}" name="Shape ${shapeId}"/>
           <wp:cNvGraphicFramePr/>
           <a:graphic>
-            <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/shape">
+            <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
               <wps:wsp>
                 <wps:cNvSpPr/>
                 <wps:spPr>
                   <a:xfrm><a:off x="0" y="0"/><a:ext cx="${width}" cy="${height}"/></a:xfrm>
                   <a:prstGeom prst="${shapeType.preset}"><a:avLst/></a:prstGeom>
-${fillXML}${lineXML}                </wps:spPr>
-${textBoxXML}                <wps:bodyPr rot="0" vert="horz" anchor="ctr" anchorCtr="0" rtlCol="0"/>
+    ${fillXML}${lineXML}            </wps:spPr>
+    ${textBoxXML}            <wps:bodyPr rot="0" vert="horz" anchor="ctr" anchorCtr="0" rtlCol="0"/>
               </wps:wsp>
             </a:graphicData>
           </a:graphic>
         </wp:inline>
       </w:drawing>
     </w:r>
-`;
+    `;
   }
 
   return `    <w:r>
-      <w:drawing>
-        <wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="251658240" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">
-          <wp:simplePos x="0" y="0"/>
-          <wp:positionH relativeFrom="column"><wp:align>${align}</wp:align></wp:positionH>
-          <wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>
-          <wp:extent cx="${width}" cy="${height}"/>
-          <wp:effectExtent l="0" t="0" r="0" b="0"/>
-          <wp:wrapNone/>
-          <wp:docPr id="${shapeId}" name="Shape ${shapeId}"/>
-          <wp:cNvGraphicFramePr/>
-          <a:graphic>
-            <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/shape">
-              <wps:wsp>
-                <wps:cNvSpPr/>
-                <wps:spPr>
-                  <a:xfrm><a:off x="0" y="0"/><a:ext cx="${width}" cy="${height}"/></a:xfrm>
-                  <a:prstGeom prst="${shapeType.preset}"><a:avLst/></a:prstGeom>
-${fillXML}${lineXML}                </wps:spPr>
-${textBoxXML}                <wps:bodyPr rot="0" vert="horz" anchor="ctr" anchorCtr="0" rtlCol="0"/>
-              </wps:wsp>
-            </a:graphicData>
-          </a:graphic>
-        </wp:anchor>
-      </w:drawing>
-    </w:r>
-`;
+    <w:drawing>
+      <wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="251658240" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">
+        <wp:simplePos x="0" y="0"/>
+        <wp:positionH relativeFrom="column"><wp:align>${align}</wp:align></wp:positionH>
+        <wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>
+        <wp:extent cx="${width}" cy="${height}"/>
+        <wp:effectExtent l="0" t="0" r="0" b="0"/>
+        <wp:wrapNone/>
+        <wp:docPr id="${shapeId}" name="Shape ${shapeId}"/>
+        <wp:cNvGraphicFramePr/>
+        <a:graphic>
+          <a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+            <wps:wsp>
+              <wps:cNvSpPr/>
+              <wps:spPr>
+                <a:xfrm><a:off x="0" y="0"/><a:ext cx="${width}" cy="${height}"/></a:xfrm>
+                <a:prstGeom prst="${shapeType.preset}"><a:avLst/></a:prstGeom>
+  ${fillXML}${lineXML}            </wps:spPr>
+  ${textBoxXML}            <wps:bodyPr rot="0" vert="horz" anchor="ctr" anchorCtr="0" rtlCol="0"/>
+            </wps:wsp>
+          </a:graphicData>
+        </a:graphic>
+      </wp:anchor>
+    </w:drawing>
+  </w:r>
+  `;
 }
 
 /**

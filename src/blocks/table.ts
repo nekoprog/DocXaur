@@ -424,17 +424,17 @@ class TableCell {
       } else if (run.text === "[PAGE_BREAK]") {
         xml += '        <w:r><w:br w:type="page"/></w:r>\n';
       } else if (run.isShape) {
-        const shapeXML = run.text
+        const indented = run.text
           .split("\n")
-          .map((line) => "        " + line)
+          .map((l) => "        " + l)
           .join("\n");
-        xml += shapeXML + "\n";
+        xml += indented + "\n";
       } else {
         xml += run.toXML();
       }
     }
 
-    xml += "      </w:p>\n";
+    xml += "      <w:p>\n".replace("<w:p>", "</w:p>");
     return xml;
   }
 
@@ -675,39 +675,23 @@ export class Table extends Element {
   async buildRows(section: Section): Promise<void> {
     if (this.isBuilt) return;
     this.isBuilt = true;
+
     for (const rowDef of this.rowDefs) {
       const row = new TableRow(this.options, rowDef.options);
+
       rowDef.cells.forEach((cell, i) => {
         if ("lineBreak" in cell) {
-          row.cell({
-            runs: [{ lineBreak: cell.lineBreak ?? 1 }],
-          });
+          row.cell({ runs: [{ lineBreak: cell.lineBreak ?? 1 }] });
         } else if ("pageBreak" in cell) {
-          row.cell({
-            runs: [{ pageBreak: cell.pageBreak ?? 1 }],
-          });
+          row.cell({ runs: [{ pageBreak: cell.pageBreak ?? 1 }] });
         } else if ("shape" in cell) {
           const shapeCell = cell as { shape: string } & ShapeOptions;
-          const shapeStr = shapeCell.shape;
           const colOptions = this.options.columns[i];
 
-          const shapeTypeMap: Record<string, ShapeType> = {
-            rect: { preset: "rect", name: "Rectangle" },
-            roundRect: { preset: "roundRect", name: "Rounded Rectangle" },
-            ellipse: { preset: "ellipse", name: "Circle" },
-            diamond: { preset: "diamond", name: "Diamond" },
-            triangle: { preset: "triangle", name: "Triangle" },
-            pentagon: { preset: "pentagon", name: "Pentagon" },
-            hexagon: { preset: "hexagon", name: "Hexagon" },
-            star5: { preset: "star5", name: "Star (5-point)" },
-            heart: { preset: "heart", name: "Heart" },
-          };
-
-          const shapeType = shapeTypeMap[shapeStr] ?? shapeTypeMap.rect;
-          const shapeXML = buildShapeXML(shapeType, shapeCell);
+          const { shape, ...shapeOpts } = shapeCell;
 
           row.cell({
-            text: "",
+            runs: [{ shape, ...shapeOpts }],
             hAlign: shapeCell.align ?? colOptions?.hAlign ?? "center",
             vAlign: colOptions?.vAlign ?? "center",
           });
@@ -751,8 +735,10 @@ export class Table extends Element {
           }
         }
       });
+
       this.rows.push(row);
     }
+
     await Promise.all(this.rows.map((row) => row.initCells(section)));
   }
 

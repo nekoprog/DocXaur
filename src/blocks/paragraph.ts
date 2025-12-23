@@ -291,10 +291,12 @@ export class Paragraph extends Element {
       const jc = align === "justify" ? "both" : align;
       xml += `      <w:jc w:val="${jc}"/>\n`;
     }
+
     const spacing = this.options.spacing;
-    const before = spacing?.before ? ptToHalfPoints(spacing.before) * 20 : 0;
-    const after = spacing?.after ? ptToHalfPoints(spacing.after) * 20 : 0;
+    const before = spacing?.before ? Math.round(spacing.before * 20) : 0;
+    const after = spacing?.after ? Math.round(spacing.after * 20) : 0;
     const line = spacing?.line ? Math.round(spacing.line * 240) : 240;
+
     xml +=
       `      <w:spacing w:after="${after}" w:before="${before}" w:line="${line}" w:lineRule="auto"/>\n`;
     xml += "    </w:pPr>\n";
