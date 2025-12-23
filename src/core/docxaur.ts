@@ -359,7 +359,7 @@ export class DocXaur {
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
   <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
     <w:zoom w:percent="100"/>
-    <w:defaultTabStop w:val="720"/
+    <w:defaultTabStop w:val="720"/>
   </w:settings>`;
   }
 
