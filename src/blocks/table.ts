@@ -48,6 +48,7 @@ type RowSegment =
  * @property {number} [fontSize] - Font size in points
  * @property {string} [fontColor] - Font color hex
  * @property {string} [fontName] - Font family name
+ * @property {number} [baselineShift] - Baseline shift in points
  */
 interface TextRunStyle {
   text: string;
@@ -57,6 +58,7 @@ interface TextRunStyle {
   fontSize?: number;
   fontColor?: string;
   fontName?: string;
+  baselineShift?: number;
 }
 
 /**
@@ -156,6 +158,7 @@ class TableCellRun {
       fontSize?: number;
       fontColor?: string;
       fontName?: string;
+      baselineShift?: number;
     },
   ) {}
 
@@ -170,9 +173,7 @@ class TableCellRun {
    * @returns {string} WordprocessingML run element
    */
   toXML(): string {
-    if (this.isShape) {
-      return this.text;
-    }
+    if (this.isShape) return this.text;
 
     let xml = "        <w:r>\n";
 
@@ -192,6 +193,10 @@ class TableCellRun {
       if (this.style.fontName) {
         xml +=
           `            <w:rFonts w:ascii="${this.style.fontName}" w:hAnsi="${this.style.fontName}"/>\n`;
+      }
+      if (typeof this.style?.baselineShift === "number") {
+        xml +=
+          `            <w:position w:val="${this.style.baselineShift}"/>\n`;
       }
       xml += "          </w:rPr>\n";
     }
@@ -370,14 +375,18 @@ class TableCell {
           runs.push(new TableCellRun(shapeXML, undefined));
           runs[runs.length - 1].isShape = true;
         } else {
+          const s = segment as TextRunStyle;
           runs.push(
-            new TableCellRun((segment as TextRunStyle).text, {
-              bold: (segment as TextRunStyle).bold,
-              italic: (segment as TextRunStyle).italic,
-              underline: (segment as TextRunStyle).underline,
-              fontSize: (segment as TextRunStyle).fontSize,
-              fontColor: (segment as TextRunStyle).fontColor,
-              fontName: (segment as TextRunStyle).fontName,
+            new TableCellRun(s.text, {
+              bold: s.bold,
+              italic: s.italic,
+              underline: s.underline,
+              fontSize: s.fontSize,
+              fontColor: s.fontColor,
+              fontName: s.fontName,
+              ...(typeof s.baselineShift === "number"
+                ? { baselineShift: ptToHalfPoints(s.baselineShift) }
+                : {}),
             }),
           );
         }
@@ -411,13 +420,21 @@ class TableCell {
     const jc = this.data.hAlign === "justify"
       ? "both"
       : this.data.hAlign ?? "center";
+    const runs = this.buildRuns();
+    const hasShape = runs.some((r) => r.isShape);
+    const hasText = runs.some((r) =>
+      !r.isShape && r.text !== "\n" && r.text !== "[PAGE_BREAK]"
+    );
 
     let xml = "      <w:p>\n";
     xml += "        <w:pPr>\n";
     xml += `          <w:jc w:val="${jc}"/>\n`;
+
+    const tAlign = this.data.baselineAlignment ??
+      (hasShape && hasText ? "center" : undefined);
+    if (tAlign) xml += `          <w:textAlignment w:val="${tAlign}"/>\n`;
     xml += "        </w:pPr>\n";
 
-    const runs = this.buildRuns();
     for (const run of runs) {
       if (run.text === "\n") {
         xml += "        <w:r><w:br/></w:r>\n";
@@ -458,7 +475,7 @@ class TableCell {
     section: Section,
   ): string {
     const vAlign = this.data.vAlign ?? "center";
-    const align = this.data.hAlign ?? "center";
+    const hAlign = this.data.hAlign ?? "center";
     let xml = "    <w:tc>\n";
     xml += "      <w:tcPr>\n";
 
@@ -692,7 +709,7 @@ export class Table extends Element {
 
           row.cell({
             runs: [{ shape, ...shapeOpts }],
-            hAlign: shapeCell.align ?? colOptions?.hAlign ?? "center",
+            hAlign: shapeCell.hAlign ?? colOptions?.hAlign ?? "center",
             vAlign: colOptions?.vAlign ?? "center",
           });
         } else {
@@ -764,7 +781,7 @@ export class Table extends Element {
    * @returns {string} WordprocessingML table element
    */
   _toXMLWithSection(section: Section): string {
-    const align = this.options.align ?? "center";
+    const hAlign = this.options.hAlign ?? "center";
     let xml = "  <w:tbl>\n";
     xml += "    <w:tblPr>\n";
 
@@ -779,7 +796,7 @@ export class Table extends Element {
       xml += `      <w:tblInd w:w="${indentTwips}" w:type="dxa"/>\n`;
     }
 
-    xml += `      <w:jc w:val="${align}"/>\n`;
+    xml += `      <w:jc w:val="${hAlign}"/>\n`;
     if (this.options.borders) {
       xml += `      <w:tblBorders>
          <w:top    w:val="single" w:sz="4" w:space="0" w:color="000000"/>

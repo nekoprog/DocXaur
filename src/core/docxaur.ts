@@ -60,12 +60,12 @@ export interface Margins {
 export interface ImageOptions {
   width?: string;
   height?: string;
-  align?: "left" | "center" | "right" | "justify";
+  hAlign?: "left" | "center" | "right" | "justify";
 }
 
 /** Paragraph styling options. */
 export interface ParagraphOptions {
-  align?: "left" | "center" | "right" | "justify";
+  hAlign?: "left" | "center" | "right" | "justify";
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
@@ -75,6 +75,8 @@ export interface ParagraphOptions {
   spacing?: { before?: number; after?: number; line?: number };
   breakBefore?: number;
   breakAfter?: number;
+  baselineAlignment?: "auto" | "baseline" | "bottom" | "center" | "top";
+  baselineShift?: number;
 }
 
 /** Table column configuration. */
@@ -99,7 +101,7 @@ export interface TableColumn {
 export interface TableOptions {
   columns: TableColumn[];
   width?: string;
-  align?: "left" | "center" | "right" | "justify";
+  hAlign?: "left" | "center" | "right" | "justify";
   borders?: boolean;
   indent?: string;
   marginTop?: string;
@@ -128,6 +130,7 @@ export interface TableCellData {
   marginRight?: string;
   marginBottom?: string;
   marginLeft?: string;
+  baselineAlignment?: "auto" | "baseline" | "bottom" | "center" | "top";
 }
 
 type ImageMapValue = { data: string; extension: string; id: number };
@@ -354,9 +357,10 @@ export class DocXaur {
 
   private generateSettings(): string {
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:zoom w:percent="100"/>
-</w:settings>`;
+  <w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+    <w:zoom w:percent="100"/>
+    <w:defaultTabStop w:val="720"/
+  </w:settings>`;
   }
 
   private generateCoreProperties(): string {

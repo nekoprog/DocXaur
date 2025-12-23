@@ -32,13 +32,13 @@ export class Image extends Element {
     const height = this.options.height
       ? parseImageSize(this.options.height)
       : width;
-    const align = this.options.align ?? "center";
+    const hAlign = this.options.hAlign ?? "center";
     const relId = this.section._doc().getImageRelId(this.imageId);
     const drawId = Image.nextId();
     let xml = "  <w:p>\n";
-    if (align !== "left") {
+    if (hAlign !== "left") {
       xml += "    <w:pPr>\n";
-      xml += `      <w:jc w:val="${align}"/>\n`;
+      xml += `      <w:jc w:val="${hAlign}"/>\n`;
       xml += "    </w:pPr>\n";
     }
     xml += `    <w:r>

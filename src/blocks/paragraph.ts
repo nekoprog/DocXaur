@@ -282,27 +282,34 @@ export class Paragraph extends Element {
    */
   toXML(): string {
     this.build();
-    const align = this.options.align ?? "left";
+    const hAlign = this.options.hAlign ?? "left";
     const breaksBefore = this.options.breakBefore ?? 0;
     const breaksAfter = this.options.breakAfter ?? 0;
+
     let xml = "  <w:p>\n";
     xml += "    <w:pPr>\n";
-    if (align !== "left") {
-      const jc = align === "justify" ? "both" : align;
+    if (hAlign !== "left") {
+      const jc = hAlign === "justify" ? "both" : hAlign;
       xml += `      <w:jc w:val="${jc}"/>\n`;
     }
-
     const spacing = this.options.spacing;
     const before = spacing?.before ? Math.round(spacing.before * 20) : 0;
     const after = spacing?.after ? Math.round(spacing.after * 20) : 0;
     const line = spacing?.line ? Math.round(spacing.line * 240) : 240;
-
     xml +=
       `      <w:spacing w:after="${after}" w:before="${before}" w:line="${line}" w:lineRule="auto"/>\n`;
+
+    if (this.options.baselineAlignment) {
+      xml +=
+        `      <w:textAlignment w:val="${this.options.baselineAlignment}"/>\n`;
+    }
+
     xml += "    </w:pPr>\n";
+
     for (let i = 0; i < breaksBefore; i++) {
       xml += "    <w:r><w:br/></w:r>\n";
     }
+
     for (const run of this.runs) {
       if ((run as any).isShape) {
         xml += run.text;
@@ -315,7 +322,13 @@ export class Paragraph extends Element {
       } else {
         xml += "    <w:r>\n";
         const style = run.style;
-        if (style && this.hasRunProperties(style)) {
+        if (
+          style && (
+            style.bold || style.italic || style.underline ||
+            style.fontSize || style.fontColor || style.fontName ||
+            style.baselineShift !== undefined
+          )
+        ) {
           xml += "      <w:rPr>\n";
           if (style.bold) xml += "        <w:b/>\n";
           if (style.italic) xml += "        <w:i/>\n";
@@ -332,16 +345,22 @@ export class Paragraph extends Element {
             xml +=
               `        <w:rFonts w:ascii="${style.fontName}" w:hAnsi="${style.fontName}"/>\n`;
           }
+
+          if (typeof style?.baselineShift === "number") {
+            const vPt = style.baselineShift; // points
+            xml += `        <w:position w:val="${ptToHalfPoints(vPt)}"/>\n`; // half-points
+          }
           xml += "      </w:rPr>\n";
         }
         xml += `      <w:t xml:space="preserve">${escapeXML(run.text)}</w:t>\n`;
         xml += "    </w:r>\n";
       }
     }
+
     for (let i = 0; i < breaksAfter; i++) {
       xml += "    <w:r><w:br/></w:r>\n";
     }
-    xml += "  </w:p>";
+    xml += "  <w:p>".replace("<w:p>", "</w:p>");
     return xml;
   }
 }

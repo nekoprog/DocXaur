@@ -205,7 +205,7 @@ export interface ShapeTextBox {
  * @property {ShapeFill} [fill] - Fill properties
  * @property {ShapeLine} [line] - Border/line properties
  * @property {ShapeTextBox} [textBox] - Text box content and styling
- * @property {string} [align] - Horizontal alignment
+ * @property {string} [hAlign] - Horizontal alignment
  * @property {"anchor" | "inline"} [position] - Shape positioning mode
  */
 export interface ShapeOptions {
@@ -213,7 +213,7 @@ export interface ShapeOptions {
   fill?: ShapeFill;
   line?: ShapeLine;
   textBox?: ShapeTextBox;
-  align?: "left" | "center" | "right";
+  hAlign?: "left" | "center" | "right";
   position?: "anchor" | "inline";
 }
 
@@ -384,7 +384,7 @@ export function buildShapeXML(
   const textBoxXML = options?.textBox ? buildTextBoxXML(options.textBox) : "";
 
   const shapeId = shapeCounter++;
-  const align = options?.align || "center";
+  const hAlign = options?.hAlign || "center";
   const position = options?.position || "anchor";
 
   const lIns = options?.textBox?.marginLeft
@@ -446,7 +446,7 @@ export function buildShapeXML(
      <w:drawing>
        <wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="251658240" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">
          <wp:simplePos x="0" y="0"/>
-         <wp:positionH relativeFrom="column"><wp:align>${align}</wp:align></wp:positionH>
+         <wp:positionH relativeFrom="column"><wp:align>${hAlign}</wp:align></wp:positionH>
          <wp:positionV relativeFrom="paragraph"><wp:posOffset>0</wp:posOffset></wp:positionV>
          <wp:extent cx="${width}" cy="${height}"/>
          <wp:effectExtent l="0" t="0" r="0" b="0"/>
